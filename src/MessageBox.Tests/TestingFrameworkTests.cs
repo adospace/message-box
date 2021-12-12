@@ -39,7 +39,7 @@ namespace MessageBox.Tests
             await clientHost.StartAsync();
 
             var busClient = clientHost.Services.GetRequiredService<IBusClient>();
-            var reply = await busClient.SendAndGetReply<SampleModel, SampleModelReply>(new SampleModel("John", "Smith"));
+            var reply = await busClient.SendAndGetReply<SampleModelReply>(new SampleModel("John", "Smith"));
 
             Assert.AreEqual("Hello John Smith!", reply.NameAndSurname);
         }

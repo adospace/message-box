@@ -12,6 +12,6 @@ namespace MessageBox
 
         Task Send<T>(T model, CancellationToken cancellationToken = default);
 
-        Task<R> SendAndGetReply<T, R>(T model, CancellationToken cancellationToken = default);
+        Task<R> SendAndGetReply<R>(object model, CancellationToken cancellationToken = default);
     }
 }

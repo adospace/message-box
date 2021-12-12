@@ -172,7 +172,7 @@ namespace MessageBox.Client.Implementation
             _waitingCalls.TryRemove(message.Id, out var _);
         }
 
-        public async Task<R> SendAndGetReply<T, R>(T model, CancellationToken cancellationToken = default)
+        public async Task<R> SendAndGetReply<R>(object model, CancellationToken cancellationToken = default)
         {
             var serializer = _messageSerializerFactory.CreateMessageSerializer();
             var modelSerialized = serializer.Serialize(model ?? throw new InvalidOperationException());
@@ -182,7 +182,7 @@ namespace MessageBox.Client.Implementation
                 BoardKey: model.GetType().FullName,
                 CorrelationId: Guid.NewGuid(),
                 Payload: modelSerialized,
-                PayloadType: typeof(T).AssemblyQualifiedName,
+                PayloadType: model.GetType().AssemblyQualifiedName,
                 RequireReply: true
             );
 
