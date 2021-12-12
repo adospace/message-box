@@ -21,6 +21,12 @@ namespace MessageBox
         /// Indicates if this message require a replay (is the first message in a RPC call)
         bool RequireReply = false,
 
+        //Indicates if this is an event that should be broacasted
+        bool IsEvent = false,
+
+        // Indicates if this message is an ack to the message with this Id
+        bool IsAck = false,
+
         /// <summary>
         /// Unique Key of the board where this message is published to
         /// </summary>

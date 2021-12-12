@@ -142,6 +142,7 @@ namespace MessageBox.Client.Implementation
                 Id: Guid.NewGuid(),
                 BoardKey: model.GetType().FullName,
                 CorrelationId: Guid.NewGuid(),
+                IsEvent: true,
                 Payload: modelSerialized,
                 PayloadType: typeof(T).AssemblyQualifiedName
             ));

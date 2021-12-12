@@ -25,10 +25,25 @@ namespace MessageBox
         private readonly static Type _messageContextType = typeof(MessageContext<>);
         private readonly static Type _taskType = typeof(Task<>);
 
-        public static IServiceCollection AddConsumer<T>(this IServiceCollection serviceCollection) where T : class
+        public static IServiceCollection AddConsumer<T>(this IServiceCollection serviceCollection, ServiceLifetime lifetime = ServiceLifetime.Scoped) where T : class
         {
-            serviceCollection.AddScoped<T>();
+            serviceCollection.Add(new ServiceDescriptor(typeof(T), typeof(T), lifetime));
 
+            AddHandlersOfConsumer<T>(serviceCollection);
+
+            return serviceCollection;
+        }
+        public static IServiceCollection AddConsumer<T>(this IServiceCollection serviceCollection, T instance) where T : class
+        {
+            serviceCollection.Add(new ServiceDescriptor(typeof(T), instance));
+
+            AddHandlersOfConsumer<T>(serviceCollection, instance);
+
+            return serviceCollection;
+        }
+
+        private static void AddHandlersOfConsumer<T>(this IServiceCollection serviceCollection, T? instance = null) where T : class
+        { 
             var typeOfIHandler = typeof(IHandler);
             var listOfHandlerTypes = typeof(T).GetInterfaces().Where(_ => _ != typeOfIHandler && typeOfIHandler.IsAssignableFrom(_)).ToArray();
 
@@ -43,7 +58,9 @@ namespace MessageBox
                     serviceCollection.AddSingleton<IMessageReceiverCallback>(sp => new MessageReceiverCallbackWithoutReturnValue(
                         typeOfModel, async (message, model, cancellationToken) =>
                     {
-                        var handler = sp.GetRequiredService<T>();
+                        using var scope = sp.CreateScope();
+                        var handler = instance ?? scope.ServiceProvider.GetRequiredService<T>();
+                        
                         try
                         {
                             var messageContext = Activator.CreateInstance(messageContextActualType, model, message);
@@ -64,7 +81,9 @@ namespace MessageBox
                     serviceCollection.AddSingleton<IMessageReceiverCallback>(sp => new MessageReceiverCallbackWithReturnValue(
                         typeOfModel, async (message, model, cancellationToken) =>
                         {
-                            var handler = sp.GetRequiredService<T>();
+                            using var scope = sp.CreateScope();
+                            var handler = instance ?? scope.ServiceProvider.GetRequiredService<T>();
+
                             try
                             {
                                 var messageContext = Activator.CreateInstance(messageContextActualType, model, message);
@@ -80,13 +99,18 @@ namespace MessageBox
                         }));
                 }
             }
-
-            return serviceCollection;
+        
         }
 
-        public static IHostBuilder AddConsumer<T>(this IHostBuilder hostBuilder) where T : class
+        public static IHostBuilder AddConsumer<T>(this IHostBuilder hostBuilder, ServiceLifetime lifetime = ServiceLifetime.Scoped) where T : class
         {
-            hostBuilder.ConfigureServices((ctx, services) => services.AddConsumer<T>());
+            hostBuilder.ConfigureServices((ctx, services) => services.AddConsumer<T>(lifetime));
+
+            return hostBuilder;
+        }
+        public static IHostBuilder AddConsumer<T>(this IHostBuilder hostBuilder, T instance) where T : class
+        {
+            hostBuilder.ConfigureServices((ctx, services) => services.AddConsumer<T>(instance));
 
             return hostBuilder;
         }

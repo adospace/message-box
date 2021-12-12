@@ -18,7 +18,7 @@
 
         public async Task ReceiveMessageFromClient(Message message, CancellationToken cancellationToken = default)
         { 
-            await _bus.OnReceivedMessage(message with { ReplyToBoxId = Box.Id }, cancellationToken);
+            await _bus.OnReceivedMessage(message.ReplyToBoxId != null ? message : message with { ReplyToBoxId = Box.Id }, cancellationToken);
         }
 
         internal async void Start()

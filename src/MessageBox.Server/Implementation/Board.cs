@@ -14,6 +14,8 @@ namespace MessageBox.Server.Implementation
 
         private readonly ConcurrentDictionary<Guid, WeakReference<IBox>> _subscribers = new();
 
+        private readonly ConcurrentQueue<WeakReference<IBox>> _subscribersQueue = new();
+
         private readonly CancellationTokenSource _cancellationTokenSource = new();
 
         public Board(string key)
@@ -30,7 +32,9 @@ namespace MessageBox.Server.Implementation
 
         public void Subscribe(IBox box)
         {
-            _subscribers[box.Id] = new WeakReference<IBox>(box);
+            var refToBox = new WeakReference<IBox>(box);
+            _subscribers[box.Id] = refToBox;
+            _subscribersQueue.Enqueue(refToBox);
         }
 
         public async void Start()
@@ -44,15 +48,34 @@ namespace MessageBox.Server.Implementation
                     break;
                 }
 
-                foreach (var subsriber in _subscribers.ToArray()) 
+                if (message.IsEvent)
                 {
-                    if (subsriber.Value.TryGetTarget(out var box))
+                    foreach (var subsriber in _subscribers.ToArray())
                     {
-                        await box.OnReceivedMessage(message, _cancellationTokenSource.Token);
+                        if (subsriber.Value.TryGetTarget(out var box))
+                        {
+                            await box.OnReceivedMessage(message, _cancellationTokenSource.Token);
+                        }
+                        else
+                        {
+                            _subscribers.Remove(subsriber.Key, out var _);
+                        }
                     }
-                    else
+                }
+                else
+                {
+                    while (true)
                     {
-                        _subscribers.Remove(subsriber.Key, out var _);
+                        if (!_subscribersQueue.TryDequeue(out var boxReference))
+                            break;
+
+                        if (!boxReference.TryGetTarget(out var box))
+                            continue;
+
+                        await box.OnReceivedMessage(message, _cancellationTokenSource.Token);
+
+                        _subscribersQueue.Enqueue(boxReference);
+                        break;
                     }
                 }
             }
