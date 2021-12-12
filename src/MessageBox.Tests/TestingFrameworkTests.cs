@@ -32,7 +32,7 @@ namespace MessageBox.Tests
             using IHost clientHost = Host.CreateDefaultBuilder()
                 .AddMessageBoxInMemoryClient()
                 .AddJsonSerializer()
-                .ConfigureServices((ctx, services) => services.AddConsumer<SampleConsumer>())
+                .AddConsumer<SampleConsumer>()
                 .Build();
 
             await serverHost.StartAsync();

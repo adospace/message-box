@@ -1,5 +1,6 @@
 ﻿using MessageBox.Client.Implementation;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,45 +21,6 @@ namespace MessageBox
 
             return serviceCollection;
         }
-
-        //public static IServiceCollection AddHandler<T, S>(this IServiceCollection serviceCollection) where S : IHandler<T>
-        //{
-        //    serviceCollection.AddSingleton<IMessageReceiverCallback>(sp => new MessageReceiverCallbackWithoutReturnValue(
-        //        typeof(T), async (message, model, cancellationToken) =>
-        //    {
-        //        var handler = sp.GetRequiredService<S>();
-        //        try
-        //        {
-        //            var messageContext = new MessageContext<T>((T)model, message);
-        //            await handler.Handle(messageContext, cancellationToken);
-        //        }
-        //        catch (Exception)
-        //        {
-        //            throw;
-        //        }
-        //    }));
-
-        //    return serviceCollection;
-        //}
-        //public static IServiceCollection AddHandler<T, RType, S>(this IServiceCollection serviceCollection) where S : IHandler<T, RType>
-        //{
-        //    serviceCollection.AddSingleton<IMessageReceiverCallback>(sp => new MessageReceiverCallbackWithReturnValue(
-        //        typeof(T), async (message, model, cancellationToken) =>
-        //        {
-        //            var handler = sp.GetRequiredService<S>();
-        //            try
-        //            {
-        //                var messageContext = new MessageContext<T>((T)model, message);
-        //                return await handler.Handle(messageContext, cancellationToken);
-        //            }
-        //            catch (Exception)
-        //            {
-        //                throw;
-        //            }
-        //        }));
-
-        //    return serviceCollection;
-        //}
 
         private readonly static Type _messageContextType = typeof(MessageContext<>);
         private readonly static Type _taskType = typeof(Task<>);
@@ -120,6 +82,13 @@ namespace MessageBox
             }
 
             return serviceCollection;
+        }
+
+        public static IHostBuilder AddConsumer<T>(this IHostBuilder hostBuilder) where T : class
+        {
+            hostBuilder.ConfigureServices((ctx, services) => services.AddConsumer<T>());
+
+            return hostBuilder;
         }
     }
 }
