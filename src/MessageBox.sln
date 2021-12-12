@@ -13,7 +13,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MessageBox.Client", "Messag
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MessageBox.Testing", "MessageBox.Testing\MessageBox.Testing.csproj", "{571460DF-2C34-44A6-8BAC-3746FF4FF374}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessageBox.Serializer.Json", "MessageBox.Serializer.Json\MessageBox.Serializer.Json.csproj", "{46BEEF38-0903-4362-ADE7-6920C5D7AFBA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MessageBox.Serializer.Json", "MessageBox.Serializer.Json\MessageBox.Serializer.Json.csproj", "{46BEEF38-0903-4362-ADE7-6920C5D7AFBA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessageBox.Tcp", "MessageBox.Tcp\MessageBox.Tcp.csproj", "{F0AF6339-DBEB-4EFC-9B6A-4652E640D3D3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessageBox.Server.Tcp", "MessageBox.Server.Tcp\MessageBox.Server.Tcp.csproj", "{E4F87A60-D362-4A14-9E64-CE243E693900}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessageBox.Client.Tcp", "MessageBox.Client.Tcp\MessageBox.Client.Tcp.csproj", "{737C6E15-9343-47CC-80D0-FBA6B219A585}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,6 +51,18 @@ Global
 		{46BEEF38-0903-4362-ADE7-6920C5D7AFBA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{46BEEF38-0903-4362-ADE7-6920C5D7AFBA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{46BEEF38-0903-4362-ADE7-6920C5D7AFBA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F0AF6339-DBEB-4EFC-9B6A-4652E640D3D3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F0AF6339-DBEB-4EFC-9B6A-4652E640D3D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F0AF6339-DBEB-4EFC-9B6A-4652E640D3D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F0AF6339-DBEB-4EFC-9B6A-4652E640D3D3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E4F87A60-D362-4A14-9E64-CE243E693900}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E4F87A60-D362-4A14-9E64-CE243E693900}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E4F87A60-D362-4A14-9E64-CE243E693900}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E4F87A60-D362-4A14-9E64-CE243E693900}.Release|Any CPU.Build.0 = Release|Any CPU
+		{737C6E15-9343-47CC-80D0-FBA6B219A585}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{737C6E15-9343-47CC-80D0-FBA6B219A585}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{737C6E15-9343-47CC-80D0-FBA6B219A585}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{737C6E15-9343-47CC-80D0-FBA6B219A585}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

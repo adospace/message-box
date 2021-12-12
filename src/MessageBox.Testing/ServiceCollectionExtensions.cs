@@ -11,7 +11,7 @@ namespace MessageBox.Testing
         {
             serviceCollection.AddMessageBoxServer();
             serviceCollection.AddSingleton<ITransportFactory, Implementation.ServerTransportFactory>();
-            serviceCollection.AddHostedService<Implementation.BusService>();
+            serviceCollection.AddMessageBoxBackgroundService();
 
             return serviceCollection;
         }
@@ -19,7 +19,7 @@ namespace MessageBox.Testing
         {
             serviceCollection.AddMessageBoxClient();
             serviceCollection.AddSingleton<ITransportFactory, Implementation.ClientTransportFactory>();
-            serviceCollection.AddHostedService<Implementation.BusService>();
+            serviceCollection.AddMessageBoxBackgroundService();
 
             return serviceCollection;
         }

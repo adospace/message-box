@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MessageBox.Server\MessageBox.Server.csproj" />
+    <ProjectReference Include="..\MessageBox.Tcp\MessageBox.Tcp.csproj" />
+    <ProjectReference Include="..\MessageBox\MessageBox.csproj" />
+  </ItemGroup>
+
+</Project>
