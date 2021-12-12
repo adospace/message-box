@@ -1,11 +1,11 @@
 ﻿namespace MessageBox.Testing.Implementation
 {
-    internal class MockTcpConnectedClient
+    internal class ConnectionFromClient
     {
         private readonly IMessageSink _bus;
         private readonly CancellationTokenSource _cts = new();
 
-        public MockTcpConnectedClient(IMessageSink bus, IBox box, MockTcpClient client)
+        public ConnectionFromClient(IMessageSink bus, IBox box, ClientTransport client)
         {
             _bus = bus;
             Box = box;
@@ -13,11 +13,12 @@
         }
 
         public IBox Box { get; }
-        public MockTcpClient Client { get; }
+
+        public ClientTransport Client { get; }
 
         public async Task ReceiveMessageFromClient(Message message, CancellationToken cancellationToken = default)
         { 
-            await _bus.OnReceivedMessage(message, cancellationToken);
+            await _bus.OnReceivedMessage(message with { ReplyToBoxId = Box.Id }, cancellationToken);
         }
 
         internal async void Start()

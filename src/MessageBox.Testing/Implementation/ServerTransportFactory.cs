@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MessageBox.Server;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,9 +9,16 @@ namespace MessageBox.Testing.Implementation
 {
     internal class ServerTransportFactory : ITransportFactory
     {
-        public ITransport Create(IMessageSource source, IMessageSink sink)
+        private readonly IServiceProvider _serviceProvider;
+
+        public ServerTransportFactory(IServiceProvider serviceProvider)
         {
-            return new ServerTransport(source, sink);
+            _serviceProvider = serviceProvider;
+        }
+
+        public ITransport Create()
+        {
+            return new ServerTransport(_serviceProvider);
         }
     }
 }

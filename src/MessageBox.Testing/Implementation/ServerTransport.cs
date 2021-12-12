@@ -1,4 +1,7 @@
-﻿using System;
+﻿using MessageBox.Server;
+using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,25 +11,47 @@ namespace MessageBox.Testing.Implementation
 {
     internal class ServerTransport : ITransport
     {
-        
-        public ServerTransport(IMessageSource source, IMessageSink sink)
+        private readonly ConcurrentDictionary<Guid, ConnectionFromClient> _clients = new();
+        private readonly IServiceProvider _serviceProvider;
+
+        public ServerTransport(IServiceProvider serviceProvider)
         {
-            Source = source;
-            Sink = sink;
+            _serviceProvider = serviceProvider;
+
+            Instance = this;
         }
 
-        public IMessageSource Source { get; }
-
-        public IMessageSink Sink { get; }
-
-        public void Start()
+        public Task Run(CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            return Task.CompletedTask;
         }
 
-        public void Stop()
+        public Task Stop(CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            foreach (var client in _clients.ToArray())
+            {
+                client.Value.Stop();
+            }
+
+            return Task.CompletedTask;
         }
+
+        public static ServerTransport? Instance { get; private set; }
+
+        public ConnectionFromClient OnClientConnected(ClientTransport client)
+        {
+            Guid boxId = Guid.NewGuid();
+
+            var bus = _serviceProvider.GetRequiredService<IBusServer>();
+            var messageSink = _serviceProvider.GetRequiredService<IMessageSink>();
+
+            var box = bus.GetOrCreateBox(boxId);
+
+            _clients[boxId] = new ConnectionFromClient(messageSink, box, client);
+            _clients[boxId].Start();
+
+            return _clients[boxId];
+        }
+
     }
 }

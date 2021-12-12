@@ -13,25 +13,43 @@ namespace MessageBox.Client.Implementation
 {
     internal class Bus : IBus, IMessageSink, IMessageSource, IBusClient
     {
-        private readonly ITransport _transport;
-        private readonly IServiceProvider _serviceProvider;
-        private readonly IEnumerable<IHandler> _allRegisteredHandlers;
-        private readonly IMessageSerializerFactory _messageSerializerFactory;
+        private class RpcCall
+        {
+            public RpcCall(Message callMessage)
+            {
+                CallMessage = callMessage;
+                WaitReplyEvent = new AsyncAutoResetEvent();
+            }
 
-        private readonly ConcurrentDictionary<Guid, ITransport> _transports = new();
+            public Message CallMessage { get; }
+            
+            public Guid Id => CallMessage.Id;
+
+            public AsyncAutoResetEvent WaitReplyEvent { get; }
+
+            public Message? ReplyMessage { get; set; }
+        }
+
+        private readonly IServiceProvider _serviceProvider;
+        private readonly IMessageSerializerFactory _messageSerializerFactory;
+        private readonly ITransport _transport;
 
         private readonly Channel<Message> _outgoingMessages = Channel.CreateUnbounded<Message>();
+
+        private readonly ConcurrentDictionary<Guid, RpcCall> _waitingCalls = new();
+        private readonly ConcurrentDictionary<Type, IMessageReceiverCallback> _receiveActionForMessageType = new();
         
-        private readonly ConcurrentDictionary<Guid, (AsyncAutoResetEvent Event, Message Message)> _waitingEvents = new();
 
         private readonly ActionBlock<Message> _innomingMessages;
 
-        public Bus(ITransportFactory transportFactory, IMessageSerializerFactory messageSerializerFactory, IServiceProvider serviceProvider, IEnumerable<IHandler> allHandlers)
+        public Bus(
+            ITransportFactory transportFactory, 
+            IMessageSerializerFactory messageSerializerFactory, 
+            IServiceProvider serviceProvider)
         {
-            _transport = transportFactory.Create(this, this);
+            _transport = transportFactory.Create();
             _messageSerializerFactory = messageSerializerFactory;
             _serviceProvider = serviceProvider;
-            _allRegisteredHandlers = allHandlers;
             _innomingMessages = new ActionBlock<Message>(ProcessIncomingMessage);
         }
 
@@ -39,48 +57,65 @@ namespace MessageBox.Client.Implementation
         {
             if (message.ReplyToId != null)
             {
-                if (_waitingEvents.TryGetValue(message.ReplyToId.Value, out var replyHandler))
+                if (_waitingCalls.TryGetValue(message.ReplyToId.Value, out var replyHandler))
                 {
-                    replyHandler.Message = message;
-                    replyHandler.Event.Set();
+                    replyHandler.ReplyMessage = message;
+                    replyHandler.WaitReplyEvent.Set();
                 }
             }
             else
             {
                 var serializer = _messageSerializerFactory.CreateMessageSerializer();
-                var deserializedModel = serializer.Deserialize(message.Payload ?? throw new InvalidOperationException());
-                var modelType = typeof(IHandler<>).MakeGenericType(deserializedModel.GetType());
+                var typeOfTheModel = Type.GetType(message.PayloadType ?? throw new InvalidOperationException()) ?? throw new InvalidOperationException($"Unable to find type {message.PayloadType}");
 
-                var messageContextType = typeof(MessageContext<>).MakeGenericType(deserializedModel.GetType());
+                if (!_receiveActionForMessageType.TryGetValue(typeOfTheModel, out var actionToCallOnReceiver))
+                {
+                    return;
+                }
 
-                using var scope = _serviceProvider.CreateScope();
-                var handler = scope.ServiceProvider.GetRequiredService(modelType);
+                var deserializedModel = serializer.Deserialize(message.Payload, typeOfTheModel);
 
-                await CallHandlerHandleFunc(handler, Activator.CreateInstance(messageContextType) ?? throw new InvalidOperationException());
+                object? returnValue = await actionToCallOnReceiver.Call(message, deserializedModel);
+
+                if (message.RequireReply)
+                { 
+                    byte[]? replyPayload = null;
+                    if (actionToCallOnReceiver.HasReturnType && returnValue != null)
+                    {
+                        replyPayload = serializer.Serialize(returnValue);
+                    }
+
+                    await Post(new Message(
+                        Id: Guid.NewGuid(),
+                        ReplyToId: message.Id,
+                        ReplyToBoxId: message.ReplyToBoxId,
+                        CorrelationId: message.CorrelationId,
+                        PayloadType: returnValue?.GetType()?.AssemblyQualifiedName,
+                        Payload: replyPayload
+                    ));
+                }
             }
         }
 
-        private static async Task CallHandlerHandleFunc(object handler, object messageContext)
+        public async Task Run(CancellationToken cancellationToken)
         {
-            var method = typeof(IHandler<>).GetMethod("Handle") ?? throw new InvalidOperationException();
-            var task = (Task)method.Invoke(handler, new[] { messageContext })!;
+            foreach (var receiverCallback in _serviceProvider.GetServices<IMessageReceiverCallback>())
+            {
+                _receiveActionForMessageType[receiverCallback.ModelType] = receiverCallback;
 
-            await task.ConfigureAwait(false);
-        }
-
-        public void Start()
-        {
-            foreach (var registeredHandler in _allRegisteredHandlers)
-            { 
-
+                //subscribe to the board
+                await Post(new Message(
+                    Id: Guid.NewGuid(),
+                    BoardKey: receiverCallback.ModelType.FullName), 
+                    cancellationToken);
             }
 
-            _transport.Start();
+            await _transport.Run(cancellationToken);
         }
 
-        public void Stop()
+        public async Task Stop(CancellationToken cancellationToken)
         {
-            _transport.Stop();
+            await _transport.Stop(cancellationToken);
         }
 
         public async Task OnReceivedMessage(Message message, CancellationToken cancellationToken = default)
@@ -93,20 +128,6 @@ namespace MessageBox.Client.Implementation
             await _outgoingMessages.Writer.WriteAsync(message, cancellationToken);
         }
 
-        internal async Task Reply<R>(Message sourceMessage, R replyModel, CancellationToken cancellationToken)
-        {
-            var serializer = _messageSerializerFactory.CreateMessageSerializer();
-            var replyModelSerialized = serializer.Serialize(replyModel ?? throw new InvalidOperationException());
-
-            await Post(new Message
-            {
-                Id = Guid.NewGuid(),
-                ReplyToId = sourceMessage.Id,
-                CorrelationId = sourceMessage.CorrelationId,
-                Payload = replyModelSerialized
-            }, cancellationToken);
-        }
-
         public async Task<Message> GetNextMessageToSend(CancellationToken cancellationToken)
         {
             return await _outgoingMessages.Reader.ReadAsync(cancellationToken);
@@ -117,13 +138,13 @@ namespace MessageBox.Client.Implementation
             var serializer = _messageSerializerFactory.CreateMessageSerializer();
             var modelSerialized = serializer.Serialize(model ?? throw new InvalidOperationException());
 
-            await Post(new Message
-            { 
-                Id = Guid.NewGuid(),
-                BoardKey = model.GetType().Name.ToString(),
-                CorrelationId = Guid.NewGuid(),
-                Payload = modelSerialized            
-            });
+            await Post(new Message(
+                Id: Guid.NewGuid(),
+                BoardKey: model.GetType().FullName,
+                CorrelationId: Guid.NewGuid(),
+                Payload: modelSerialized,
+                PayloadType: typeof(T).AssemblyQualifiedName
+            ));
         }
 
         public async Task Send<T>(T model, CancellationToken cancellationToken = default)
@@ -131,23 +152,24 @@ namespace MessageBox.Client.Implementation
             var serializer = _messageSerializerFactory.CreateMessageSerializer();
             var modelSerialized = serializer.Serialize(model ?? throw new InvalidOperationException());
 
-            var message = new Message
-            {
-                Id = Guid.NewGuid(),
-                BoardKey = model.GetType().Name.ToString(),
-                CorrelationId = Guid.NewGuid(),
-                Payload = modelSerialized
-            };
+            var message = new Message(
+                Id: Guid.NewGuid(),
+                BoardKey: model.GetType().FullName,
+                CorrelationId: Guid.NewGuid(),
+                Payload: modelSerialized,
+                PayloadType: typeof(T).AssemblyQualifiedName,
+                RequireReply: true
+            );
 
-            var replyEvent = new AsyncAutoResetEvent();
+            var call = new RpcCall(message);
 
-            _waitingEvents[message.Id] = new(replyEvent, message);
+            _waitingCalls[message.Id] = call;
             
             await Post(message);
 
-            await replyEvent.WaitAsync(cancellationToken);
+            await call.WaitReplyEvent.WaitAsync(cancellationToken);
 
-            _waitingEvents.TryRemove(message.Id, out var _);
+            _waitingCalls.TryRemove(message.Id, out var _);
         }
 
         public async Task<R> SendAndGetReply<T, R>(T model, CancellationToken cancellationToken = default)
@@ -155,25 +177,32 @@ namespace MessageBox.Client.Implementation
             var serializer = _messageSerializerFactory.CreateMessageSerializer();
             var modelSerialized = serializer.Serialize(model ?? throw new InvalidOperationException());
 
-            var message = new Message
-            {
-                Id = Guid.NewGuid(),
-                BoardKey = model.GetType().Name.ToString(),
-                CorrelationId = Guid.NewGuid(),
-                Payload = modelSerialized
-            };
+            var message = new Message(
+                Id:Guid.NewGuid(),
+                BoardKey: model.GetType().FullName,
+                CorrelationId: Guid.NewGuid(),
+                Payload: modelSerialized,
+                PayloadType: typeof(T).AssemblyQualifiedName,
+                RequireReply: true
+            );
 
-            var replyEvent = new AsyncAutoResetEvent();
+            var call = new RpcCall(message);
 
-            _waitingEvents[message.Id] = new(replyEvent, message);
+            _waitingCalls[message.Id] = call;
 
             await Post(message);
 
-            await replyEvent.WaitAsync(cancellationToken);
+            await call.WaitReplyEvent.WaitAsync(cancellationToken);
 
-            var deserializedReplyModel = serializer.Deserialize(_waitingEvents[message.Id].Message.Payload ?? throw new InvalidOperationException());
+            var replyMessage = call.ReplyMessage ?? throw new InvalidOperationException();
+            var replyMessagePayload = replyMessage.Payload ?? throw new InvalidOperationException();
+            var replyMessagePayloadType = Type.GetType(replyMessage.PayloadType ?? throw new InvalidOperationException()) ?? throw new InvalidOperationException();
 
-            _waitingEvents.Remove(message.Id, out var _);
+            var deserializedReplyModel = serializer.Deserialize(
+                replyMessagePayload,
+                replyMessagePayloadType);
+
+            _waitingCalls.Remove(message.Id, out var _);
 
             return (R)deserializedReplyModel;
         }

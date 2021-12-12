@@ -8,8 +8,8 @@ namespace MessageBox
 {
     public interface IBus
     {
-        void Start();
+        Task Run(CancellationToken cancellationToken = default);
 
-        void Stop();
+        Task Stop(CancellationToken cancellationToken = default);
     }
 }

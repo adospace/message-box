@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,31 +9,35 @@ namespace MessageBox.Testing.Implementation
 {
     internal class ClientTransport : ITransport
     {
+        private readonly IServiceProvider _serviceProvider;
 
-        private CancellationTokenSource _cts = new CancellationTokenSource();
-
-        public ClientTransport(IMessageSource source, IMessageSink sink)
+        public ClientTransport(IServiceProvider serviceProvider)
         { 
-            Source = source;
-            Sink = sink;
+            _serviceProvider = serviceProvider;
         }
-        public IMessageSource Source { get; }
 
-        public IMessageSink Sink { get; }
-
-        public async void Start()
+        public async Task Run(CancellationToken cancellationToken)
         {
-            while (!_cts.IsCancellationRequested)
-            {
-                var messageToSend = await Source.GetNextMessageToSend(_cts.Token);            
+            var connectedClient = ServerTransport.Instance?.OnClientConnected(this) ?? throw new InvalidOperationException();
+            var source = _serviceProvider.GetRequiredService<IMessageSource>();
 
-                
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                var messageToSend = await source.GetNextMessageToSend(cancellationToken);
+                await connectedClient.ReceiveMessageFromClient(messageToSend, cancellationToken);
             }
         }
 
-        public void Stop()
+        public Task Stop(CancellationToken cancellationToken)
         {
+            return Task.CompletedTask;
+        }
+
+        internal Task OnReceiveMessageFromServer(Message message, CancellationToken token)
+        {
+            var sink = _serviceProvider.GetRequiredService<IMessageSink>();
             
+            return sink.OnReceivedMessage(message, token);
         }
     }
 }

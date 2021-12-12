@@ -10,6 +10,6 @@ namespace MessageBox.Client
     {
         byte[] Serialize(object model);
 
-        object Deserialize(byte[] message);
+        object Deserialize(ReadOnlySpan<byte> message, Type targetType);
     }
 }

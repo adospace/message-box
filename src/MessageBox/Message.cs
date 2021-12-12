@@ -7,56 +7,43 @@ using System.Threading.Tasks;
 
 namespace MessageBox
 {
-    [MessagePackObject]
-    public class Message
-    {
+    public record Message(
         /// <summary>
         /// Unique Id for the message
         /// </summary>
-        [Key(0)]
-        public Guid Id { get; set; }
+        Guid Id,
 
         /// <summary>
-        /// Id of the message whose this message is a reply
+        /// Id of the message whose this message is a reply to
         /// </summary>
-        [Key(1)]
-        public Guid? ReplyToId { get; set; }
+        Guid? ReplyToId = null,
+
+        /// Indicates if this message require a replay (is the first message in a RPC call)
+        bool RequireReply = false,
 
         /// <summary>
-        /// Optional Id of the destination box
+        /// Unique Key of the board where this message is published to
         /// </summary>
-        [Key(2)] 
-        public Guid? DestinationBoxId { get; set; }
-
-        /// <summary>
-        /// Unique Key of the board where this message is published
-        /// </summary>
-        [Key(3)] 
-        public string? BoardKey { get; set; }
+        string? BoardKey = null,
 
         /// <summary>
         /// Unique Id of the box where the reply to this message should be send
         /// </summary>
-        [Key(4)] 
-        public Guid? ReplyToBoxId { get; set; }
+        Guid? ReplyToBoxId = null,
 
         /// <summary>
         /// Optional correlation id of the message, useful to "correlate" different messages
         /// </summary>
-        [Key(5)] 
-        public Guid? CorrelationId { get; set; }
+        Guid? CorrelationId = null,
+
+        /// <summary>
+        /// Type name of the object serialized in the Payload property
+        /// </summary>
+        string? PayloadType = null,
 
         /// <summary>
         /// Optional payload data
         /// </summary>
-        [Key(6)] 
-        public byte[]? Payload { get; set; }
-    }
-
-    public enum BoardPublishStrategy
-    {
-        SendToAllSubscribers,
-
-        SendToFirstAvailableInRoundRobinStrategy
-    }
+        byte[]? Payload = null
+    );
 }

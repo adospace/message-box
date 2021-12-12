@@ -1,19 +1,39 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using MessageBox.Client;
+using MessageBox.Server;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace MessageBox.Testing
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddInMemoryMessageBox(this IServiceCollection serviceCollection)
+        public static IServiceCollection AddMessageBoxInMemoryServer(this IServiceCollection serviceCollection)
         {
-            serviceCollection.AddSingleton<ITransportFactory, Implementation.ClientTransportFactory>();
+            serviceCollection.AddMessageBoxServer();
+            serviceCollection.AddSingleton<ITransportFactory, Implementation.ServerTransportFactory>();
+            serviceCollection.AddHostedService<Implementation.BusService>();
 
             return serviceCollection;
+        }
+        public static IServiceCollection AddMessageBoxInMemoryClient(this IServiceCollection serviceCollection)
+        {
+            serviceCollection.AddMessageBoxClient();
+            serviceCollection.AddSingleton<ITransportFactory, Implementation.ClientTransportFactory>();
+            serviceCollection.AddHostedService<Implementation.BusService>();
+
+            return serviceCollection;
+        }
+
+        public static IHostBuilder AddMessageBoxInMemoryServer(this IHostBuilder hostBuilder)
+        {
+            hostBuilder.ConfigureServices((ctx, services) => services.AddMessageBoxInMemoryServer());
+            return hostBuilder;
+        }
+
+        public static IHostBuilder AddMessageBoxInMemoryClient(this IHostBuilder hostBuilder)
+        {
+            hostBuilder.ConfigureServices((ctx, services) => services.AddMessageBoxInMemoryClient());
+            return hostBuilder;
         }
     }
 }

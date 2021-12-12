@@ -12,13 +12,8 @@ namespace MessageBox.Server.Implementation
     {
         private readonly Channel<Message> _outgoingMessages = Channel.CreateUnbounded<Message>();
 
-        private readonly ConcurrentDictionary<Guid, Message> _messagesToAck = new();
-        
-        private readonly IMessageSink _messageSink;
-
-        public Box(IMessageSink bus, Guid id)
+        public Box(Guid id)
         {
-            _messageSink = bus;
             Id = id;
         }
 
@@ -31,33 +26,7 @@ namespace MessageBox.Server.Implementation
 
         public async Task<Message> GetNextMessageToSend(CancellationToken cancellationToken)
         {
-            var message = await _outgoingMessages.Reader.ReadAsync(cancellationToken);
-
-            _messagesToAck.TryAdd(message.Id, message);
-
-            return message;
-        }
-
-        public void AckMessage(Guid messageId)
-            => _messagesToAck.TryRemove(messageId, out var _);
-
-        public async Task DiscardAllPendingMessagesToAck(CancellationToken cancellationToken)
-        {
-            Message message;
-            while ((message = _messagesToAck.FirstOrDefault().Value) != null)
-            {
-                if (!_messagesToAck.TryRemove(message.Id, out _))
-                    continue;
-
-                if (message.BoardKey != null)
-                {
-                    await _messageSink.OnReceivedMessage(message, cancellationToken);
-                }
-                else
-                {
-                    await _outgoingMessages.Writer.WriteAsync(message, cancellationToken);
-                }
-            }
+            return await _outgoingMessages.Reader.ReadAsync(cancellationToken);
         }
     }
 }

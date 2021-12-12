@@ -28,7 +28,7 @@ namespace MessageBox.Server.Implementation
             await _outgoingMessages.Writer.WriteAsync(message, cancellationToken);
         }
 
-        public void Subsscribe(IBox box)
+        public void Subscribe(IBox box)
         {
             _subscribers[box.Id] = new WeakReference<IBox>(box);
         }

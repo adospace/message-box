@@ -10,6 +10,8 @@ namespace MessageBox
     {
         string Key { get; }
 
+        void Subscribe(IBox box);
+
         void Start();
 
         void Stop();

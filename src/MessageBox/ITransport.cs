@@ -2,12 +2,8 @@
 {
     public interface ITransport
     {
-        IMessageSource Source { get; }
+        Task Run(CancellationToken cancellationToken = default);
 
-        IMessageSink Sink { get; }
-
-        void Stop();
-
-        void Start();
+        Task Stop(CancellationToken cancellationToken = default);
     }
 }

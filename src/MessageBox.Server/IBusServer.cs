@@ -6,10 +6,10 @@ using System.Threading.Tasks;
 
 namespace MessageBox.Server
 {
-    public interface IBusServer : IBus
+    public interface IBusServer
     {
-        IBox GetBox(Guid id);
+        IBox GetOrCreateBox(Guid id);
 
-        IBoard GetBoard(string key);
+        IBoard GetOrCreateBoard(string key);
     }
 }

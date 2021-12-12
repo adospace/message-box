@@ -13,81 +13,79 @@ namespace MessageBox.Server.Implementation
 
         private readonly ConcurrentDictionary<Guid, IBox> _boxes = new();
 
-        private readonly ConcurrentDictionary<Guid, ITransport> _transports = new();
-
-        private readonly ITransportFactory _transportFactory;
+        private readonly ITransport _transport;
 
         public Bus(ITransportFactory transportFactory)
         {
-            _transportFactory = transportFactory;
+            _transport = transportFactory.Create();
         }
 
-        public IBoard GetBoard(string key)
+        public IBoard GetOrCreateBoard(string key)
         {
             if (string.IsNullOrWhiteSpace(key))
             {
                 throw new ArgumentException($"'{nameof(key)}' cannot be null or whitespace.", nameof(key));
             }
 
-            return _boards.GetOrAdd(key, key => new Board(key));
-        }
-
-        public IBox GetBox(Guid id)
-        {
-            return _boxes.GetOrAdd(id, id => 
+            return _boards.GetOrAdd(key, key =>
             {
-                var box = new Box(this, id);
-                
-                _transports.GetOrAdd(box.Id, key => _transportFactory.Create(box, this));
-
-                return box;
+                var board = new Board(key);
+                board.Start();
+                return board;
             });
         }
 
-        public void Start()
+        public IBox GetOrCreateBox(Guid id)
         {
-            foreach (var board in _boards.ToArray())
-            {
-                board.Value.Start();
-            }
-
-            foreach (var transport in _transports.ToArray())
-            {
-                transport.Value.Start();
-            }
+            return _boxes.GetOrAdd(id, id => new Box(id));
         }
 
-        public void Stop()
+        public async Task Run(CancellationToken cancellationToken)
         {
+            await _transport.Run(cancellationToken);
+        }
+
+        public async Task Stop(CancellationToken cancellationToken)
+        {
+            await _transport.Stop(cancellationToken);
+
             foreach (var board in _boards.ToArray())
             {
                 board.Value.Stop();
-            }
-
-            foreach (var transport in _transports.ToArray())
-            {
-                transport.Value.Stop();
             }
         }
 
         public async Task OnReceivedMessage(Message message, CancellationToken cancellationToken)
         {
-            IMessageSink? sink;
-
             if (message.BoardKey != null)
             {
-                sink = GetBoard(message.BoardKey);
+                var board = GetOrCreateBoard(message.BoardKey);
+
+                if (message.Payload == null && message.PayloadType == null)
+                {
+                    if (message.ReplyToBoxId == null)
+                    {
+                        throw new InvalidOperationException();
+                    }
+
+                    board.Subscribe(GetOrCreateBox(message.ReplyToBoxId.Value));
+                }
+                else
+                {
+                    await board.OnReceivedMessage(message, cancellationToken);
+                }
+
             }
-            else if (message.DestinationBoxId != null)
+            else if (message.ReplyToBoxId != null)
             {
-                sink = GetBox(message.DestinationBoxId.Value);
+                var box = GetOrCreateBox(message.ReplyToBoxId.Value);
+
+                await box.OnReceivedMessage(message, cancellationToken);
             }
             else
             {
                 throw new InvalidOperationException();
             }
-
-            await sink.OnReceivedMessage(message, cancellationToken);
         }
     }
 }

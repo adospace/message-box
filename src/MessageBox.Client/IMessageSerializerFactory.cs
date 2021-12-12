@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MessageBox.Client
 {
-    internal interface IMessageSerializerFactory
+    public interface IMessageSerializerFactory
     {
         IMessageSerializer CreateMessageSerializer();
     }

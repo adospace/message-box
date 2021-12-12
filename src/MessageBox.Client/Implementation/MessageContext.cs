@@ -8,21 +8,14 @@ namespace MessageBox.Client.Implementation
 {
     internal class MessageContext<T> : IMessageContext<T>
     {
-        private readonly Bus _busClient;
-        private readonly Message _message;
-
-        public MessageContext(Bus busClient, T model, Message message)
+        public MessageContext(T model, Message message)
         {
-            _busClient = busClient;
             Model = model;
-            _message = message;
+            Message = message;
         }
 
         public T Model { get; }
 
-        public async Task Reply<R>(R replyModel, CancellationToken cancellationToken = default)
-        {
-            await _busClient.Reply(_message, replyModel, cancellationToken);
-        }
+        public Message Message { get; }
     }
 }

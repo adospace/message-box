@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MessageBox
+namespace MessageBox.Client.Implementation
 {
-    public interface ITransportFactory
+    internal class HandlerDescriptor
     {
-        ITransport Create();
+         
     }
 }

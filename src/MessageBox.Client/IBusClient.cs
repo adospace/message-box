@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MessageBox.Client
+namespace MessageBox
 {
-    public interface IBusClient : IBus
+    public interface IBusClient
     {
         Task Publish<T>(T model, CancellationToken cancellationToken = default);
 

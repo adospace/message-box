@@ -8,9 +8,16 @@ namespace MessageBox.Testing.Implementation
 {
     internal class ClientTransportFactory : ITransportFactory
     {
-        public ITransport Create(IMessageSource source, IMessageSink sink)
+        private readonly IServiceProvider _serviceProvider;
+
+        public ClientTransportFactory(IServiceProvider serviceProvider)
         {
-            return new ClientTransport(source, sink);
+            _serviceProvider = serviceProvider;
+        }
+
+        public ITransport Create()
+        {
+            return new ClientTransport(_serviceProvider);
         }
     }
 }
