@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Nito.AsyncEx;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,6 +19,8 @@ namespace MessageBox.Server.Implementation
 
         private readonly CancellationTokenSource _cancellationTokenSource = new();
 
+        private readonly AsyncAutoResetEvent _subscribersListIsEmptyEvent = new();
+
         public Board(string key)
         {
             Key = key;
@@ -35,6 +38,8 @@ namespace MessageBox.Server.Implementation
             var refToBox = new WeakReference<IBox>(box);
             _subscribers[box.Id] = refToBox;
             _subscribersQueue.Enqueue(refToBox);
+
+            _subscribersListIsEmptyEvent.Set();
         }
 
         public async void Start()
@@ -48,36 +53,52 @@ namespace MessageBox.Server.Implementation
                     break;
                 }
 
-                if (message.IsEvent)
+                while (true)
                 {
-                    foreach (var subsriber in _subscribers.ToArray())
+                    if (message.IsEvent)
                     {
-                        if (subsriber.Value.TryGetTarget(out var box))
+                        foreach (var subsriber in _subscribers.ToArray())
                         {
-                            await box.OnReceivedMessage(message, _cancellationTokenSource.Token);
+                            if (subsriber.Value.TryGetTarget(out var box))
+                            {
+                                await box.OnReceivedMessage(message, _cancellationTokenSource.Token);
+                            }
+                            else
+                            {
+                                _subscribers.Remove(subsriber.Key, out var _);
+                            }
                         }
-                        else
+
+                        if (!_subscribers.IsEmpty)
                         {
-                            _subscribers.Remove(subsriber.Key, out var _);
-                        }
-                    }
-                }
-                else
-                {
-                    while (true)
-                    {
-                        if (!_subscribersQueue.TryDequeue(out var boxReference))
                             break;
-
-                        if (!boxReference.TryGetTarget(out var box))
-                            continue;
-
-                        await box.OnReceivedMessage(message, _cancellationTokenSource.Token);
-
-                        _subscribersQueue.Enqueue(boxReference);
-                        break;
+                        }
                     }
+                    else
+                    {
+                        while (true)
+                        {
+                            if (!_subscribersQueue.TryDequeue(out var boxReference))
+                                break;
+
+                            if (!boxReference.TryGetTarget(out var box))
+                                continue;
+
+                            await box.OnReceivedMessage(message, _cancellationTokenSource.Token);
+
+                            _subscribersQueue.Enqueue(boxReference);
+                            break;
+                        }
+
+                        if (!_subscribersQueue.IsEmpty)
+                        {
+                            break;
+                        }
+                    }
+
+                    await _subscribersListIsEmptyEvent.WaitAsync(_cancellationTokenSource.Token);
                 }
+
             }
         }
 

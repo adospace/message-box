@@ -25,7 +25,7 @@ namespace MessageBox.Tests
 
 
         [TestMethod]
-        public async Task SendAndReceiveMessageUsingTestingFramework()
+        public async Task SendAndReceiveMessage()
         {
             using IHost serverHost = Host.CreateDefaultBuilder()
                 .AddMessageBoxInMemoryServer()
@@ -53,7 +53,7 @@ namespace MessageBox.Tests
         }
 
         [TestMethod]
-        public async Task SendAndReceiveMessageWithMultipleConsumersUsingTestingFramework()
+        public async Task SendAndReceiveMessageWithMultipleConsumers()
         {
             using IHost serverHost = Host.CreateDefaultBuilder()
                 .AddMessageBoxInMemoryServer()
@@ -92,7 +92,7 @@ namespace MessageBox.Tests
         }
 
         [TestMethod]
-        public async Task PublishEventMessageWithMultipleConsumersUsingTestingFramework()
+        public async Task PublishEventMessageWithMultipleConsumers()
         {
             using IHost serverHost = Host.CreateDefaultBuilder()
                 .AddMessageBoxInMemoryServer()
@@ -133,5 +133,78 @@ namespace MessageBox.Tests
             Assert.IsTrue((consumer1.HandleCallCount == 2 && consumer2.HandleCallCount == 1) || (consumer1.HandleCallCount == 1 && consumer2.HandleCallCount == 2));
 
         }
+
+        [TestMethod]
+        public async Task SendMessageWithMultipleConsumers()
+        {
+            using IHost serverHost = Host.CreateDefaultBuilder()
+                .AddMessageBoxInMemoryServer()
+                .Build();
+
+            using IHost clientHost = Host.CreateDefaultBuilder()
+                .AddMessageBoxInMemoryClient()
+                .AddJsonSerializer()
+                .Build();
+
+            var consumer1 = new SampleConsumer();
+            using IHost consumerHost1 = Host.CreateDefaultBuilder()
+                .AddMessageBoxInMemoryClient()
+                .AddJsonSerializer()
+                .AddConsumer(consumer1)
+                .Build();
+
+            var consumer2 = new SampleConsumer();
+            using IHost consumerHost2 = Host.CreateDefaultBuilder()
+                .AddMessageBoxInMemoryClient()
+                .AddJsonSerializer()
+                .AddConsumer(consumer2)
+                .Build();
+
+            await serverHost.StartAsync();
+            await clientHost.StartAsync();
+            await consumerHost1.StartAsync();
+            await consumerHost2.StartAsync();
+
+            var busClient = clientHost.Services.GetRequiredService<IBusClient>();
+            await busClient.Send(new SampleModel("John", "Smith"));
+
+            Assert.IsTrue((consumer1.HandleCallCount == 1 && consumer2.HandleCallCount == 0) || (consumer1.HandleCallCount == 0 && consumer2.HandleCallCount == 1));
+        }
+
+
+        [TestMethod]
+        public async Task SendAndReceiveMessageWhenConsumerIsAvailable()
+        {
+            using IHost serverHost = Host.CreateDefaultBuilder()
+                .AddMessageBoxInMemoryServer()
+                .Build();
+
+            using IHost clientHost = Host.CreateDefaultBuilder()
+                .AddMessageBoxInMemoryClient()
+                .AddJsonSerializer()
+                .Build();
+
+            using IHost consumerHost = Host.CreateDefaultBuilder()
+                .AddMessageBoxInMemoryClient()
+                .AddJsonSerializer()
+                .AddConsumer<SampleConsumer>()
+                .Build();
+
+            await serverHost.StartAsync();
+            await clientHost.StartAsync();
+
+            var busClient = clientHost.Services.GetRequiredService<IBusClient>();
+            var replyTask = busClient.SendAndGetReply<SampleModelReply>(new SampleModel("John", "Smith"));
+            var startConsumerHostTask = Task.Run(async () =>
+            {
+                await Task.Delay(4000);
+                await consumerHost.StartAsync();
+            });
+
+            Task.WaitAll(replyTask, startConsumerHostTask);
+
+            Assert.AreEqual("Hello John Smith!", replyTask.Result.NameAndSurname);
+        }
+
     }
 }
