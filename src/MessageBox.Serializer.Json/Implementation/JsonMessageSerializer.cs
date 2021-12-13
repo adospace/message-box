@@ -17,9 +17,9 @@ namespace MessageBox.Serializer.Json.Implementation
             _serializerOptions = serializerOptions;
         }
 
-        public object Deserialize(ReadOnlySpan<byte> message, Type targetType)
+        public object Deserialize(ReadOnlyMemory<byte> message, Type targetType)
         {
-            return JsonSerializer.Deserialize(message, targetType, _serializerOptions) ?? throw new InvalidOperationException();
+            return JsonSerializer.Deserialize(message.Span, targetType, _serializerOptions) ?? throw new InvalidOperationException();
         }
 
         public byte[] Serialize(object model)

@@ -128,6 +128,8 @@ namespace MessageBox.Tests
 
             var reply = await busClient.SendAndGetReply<SampleModelReply>(new SampleModel("John", "Smith"));
 
+            await Task.Delay(1000);
+
             Assert.AreEqual("Hello John Smith!", reply.NameAndSurname);
 
             Assert.IsTrue((consumer1.HandleCallCount == 2 && consumer2.HandleCallCount == 1) || (consumer1.HandleCallCount == 1 && consumer2.HandleCallCount == 2));

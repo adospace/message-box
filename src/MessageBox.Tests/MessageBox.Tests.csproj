@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -16,9 +16,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\MessageBox.Client.Tcp\MessageBox.Client.Tcp.csproj" />
     <ProjectReference Include="..\MessageBox.Client\MessageBox.Client.csproj" />
     <ProjectReference Include="..\MessageBox.Serializer.Json\MessageBox.Serializer.Json.csproj" />
+    <ProjectReference Include="..\MessageBox.Server.Tcp\MessageBox.Server.Tcp.csproj" />
     <ProjectReference Include="..\MessageBox.Server\MessageBox.Server.csproj" />
+    <ProjectReference Include="..\MessageBox.Tcp\MessageBox.Tcp.csproj" />
     <ProjectReference Include="..\MessageBox.Testing\MessageBox.Testing.csproj" />
     <ProjectReference Include="..\MessageBox\MessageBox.csproj" />
   </ItemGroup>

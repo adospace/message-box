@@ -3,10 +3,11 @@ using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MessageBox.Client.Tcp
+namespace MessageBox
 {
     public static class ServiceCollectionExtensions
     {
@@ -25,9 +26,9 @@ namespace MessageBox.Client.Tcp
             return hostBuilder;
         }
 
-        public static IHostBuilder AddMessageBoxTcpClient(this IHostBuilder hostBuilder, int port)
+        public static IHostBuilder AddMessageBoxTcpClient(this IHostBuilder hostBuilder, IPAddress address, int port)
         {
-            hostBuilder.ConfigureServices((ctx, services) => services.AddMessageBoxTcpClient(new TcpTransportOptions(port)));
+            hostBuilder.ConfigureServices((ctx, services) => services.AddMessageBoxTcpClient(new TcpTransportOptions(address, port)));
             return hostBuilder;
         }
 

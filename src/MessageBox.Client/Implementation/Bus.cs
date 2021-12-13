@@ -73,7 +73,7 @@ namespace MessageBox.Client.Implementation
                     return;
                 }
 
-                var deserializedModel = serializer.Deserialize(message.Payload, typeOfTheModel);
+                var deserializedModel = serializer.Deserialize(message.Payload ?? throw new InvalidOperationException(), typeOfTheModel);
 
                 object? returnValue = await actionToCallOnReceiver.Call(message, deserializedModel);
 
@@ -95,6 +95,8 @@ namespace MessageBox.Client.Implementation
                     ));
                 }
             }
+
+            message.MessageMemoryOwner?.Dispose();
         }
 
         public async Task Run(CancellationToken cancellationToken)
