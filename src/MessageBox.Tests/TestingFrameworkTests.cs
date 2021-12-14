@@ -182,7 +182,6 @@ namespace MessageBox.Tests
             Assert.IsTrue((consumer1.HandleCallCount == 1 && consumer2.HandleCallCount == 0) || (consumer1.HandleCallCount == 0 && consumer2.HandleCallCount == 1));
         }
 
-
         [TestMethod]
         public async Task SendAndReceiveMessageWhenConsumerIsAvailable()
         {

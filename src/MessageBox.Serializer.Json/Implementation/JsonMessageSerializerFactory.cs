@@ -10,16 +10,26 @@ namespace MessageBox.Serializer.Json.Implementation
 {
     internal class JsonMessageSerializerFactory : IMessageSerializerFactory
     {
-        private readonly JsonSerializerOptions? _options;
+        private readonly IEnumerable<JsonSerializerConfigurator> _configurators;
 
-        public JsonMessageSerializerFactory(JsonSerializerOptions? options = null)
+        public JsonMessageSerializerFactory(IEnumerable<JsonSerializerConfigurator> configurators)
         {
-            _options = options;
+            _configurators = configurators;
         }
 
         public IMessageSerializer CreateMessageSerializer()
         {
-            return new JsonMessageSerializer(_options);
+            JsonSerializerOptions? options = null;
+            if (_configurators.Any())
+            {
+                options = new();
+                foreach (var configurator in _configurators)
+                {
+                    configurator.ConfiguratorAction(options);
+                }
+            }
+
+            return new JsonMessageSerializer(options);
         }
     }
 }
