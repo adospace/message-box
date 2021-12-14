@@ -13,13 +13,22 @@ namespace MessageBox.Tests
         public record SampleModel(string Name, string Surname);
         public record SampleModelReply(string NameAndSurname);
 
-        public class SampleConsumer : IHandler<SampleModel, SampleModelReply>
+        public record SampleModelThatRaisesException();
+
+        public class SampleConsumer : 
+            IHandler<SampleModel, SampleModelReply>,
+            IHandler<SampleModelThatRaisesException>
         {
             public int HandleCallCount { get; private set; }
             public Task<SampleModelReply> Handle(IMessageContext<SampleModel> messageContext, CancellationToken cancellationToken = default)
             {
                 HandleCallCount++;
                 return Task.FromResult(new SampleModelReply($"Hello {messageContext.Model.Name} {messageContext.Model.Surname}!"));
+            }
+
+            public Task Handle(IMessageContext<SampleModelThatRaisesException> messageContext, CancellationToken cancellationToken = default)
+            {
+                throw new System.NotImplementedException();
             }
         }
 
@@ -206,6 +215,32 @@ namespace MessageBox.Tests
             Task.WaitAll(replyTask, startConsumerHostTask);
 
             Assert.AreEqual("Hello John Smith!", replyTask.Result.NameAndSurname);
+        }
+
+        [TestMethod]
+        public async Task SendAndConsumerThrowsException()
+        {
+            using IHost serverHost = Host.CreateDefaultBuilder()
+                .AddMessageBoxInMemoryServer()
+                .Build();
+
+            using IHost clientHost = Host.CreateDefaultBuilder()
+                .AddMessageBoxInMemoryClient()
+                .AddJsonSerializer()
+                .Build();
+
+            using IHost consumerHost = Host.CreateDefaultBuilder()
+                .AddMessageBoxInMemoryClient()
+                .AddJsonSerializer()
+                .AddConsumer<SampleConsumer>()
+                .Build();
+
+            await serverHost.StartAsync();
+            await clientHost.StartAsync();
+            await consumerHost.StartAsync();
+
+            var busClient = clientHost.Services.GetRequiredService<IBusClient>();
+            await Assert.ThrowsExceptionAsync<MessageBoxCallException>(() => busClient.Send(new SampleModelThatRaisesException()));
         }
 
     }

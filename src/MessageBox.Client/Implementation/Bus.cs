@@ -4,6 +4,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -75,12 +76,21 @@ namespace MessageBox.Client.Implementation
 
                 var deserializedModel = serializer.Deserialize(message.Payload ?? throw new InvalidOperationException(), typeOfTheModel);
 
-                object? returnValue = await actionToCallOnReceiver.Call(message, deserializedModel);
+                object? returnValue;
+
+                try
+                {
+                    returnValue = await actionToCallOnReceiver.Call(message, deserializedModel);
+                }
+                catch (TargetInvocationException ex)
+                {
+                    returnValue = new MessageBoxCallException($"Exception raised when calling handler for model type '{typeOfTheModel}:{Environment.NewLine}{ex.InnerException}");
+                }                
 
                 if (message.RequireReply)
                 { 
                     byte[]? replyPayload = null;
-                    if (actionToCallOnReceiver.HasReturnType && returnValue != null)
+                    if (returnValue != null)
                     {
                         replyPayload = serializer.Serialize(returnValue);
                     }
@@ -173,6 +183,22 @@ namespace MessageBox.Client.Implementation
             await call.WaitReplyEvent.WaitAsync(cancellationToken);
 
             _waitingCalls.TryRemove(message.Id, out var _);
+
+            if (call.ReplyMessage != null && call.ReplyMessage.Payload != null)
+            {
+                var replyMessage = call.ReplyMessage;
+                var replyMessagePayload = replyMessage.Payload ?? throw new InvalidOperationException();
+                var replyMessagePayloadType = Type.GetType(replyMessage.PayloadType ?? throw new InvalidOperationException()) ?? throw new InvalidOperationException();
+
+                var deserializedReplyModel = serializer.Deserialize(
+                    replyMessagePayload,
+                    replyMessagePayloadType);
+
+                if (deserializedReplyModel is MessageBoxCallException exception)
+                {
+                    throw exception;
+                }
+            }
         }
 
         public async Task<R> SendAndGetReply<R>(object model, CancellationToken cancellationToken = default)

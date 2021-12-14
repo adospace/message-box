@@ -60,16 +60,8 @@ namespace MessageBox
                     {
                         using var scope = sp.CreateScope();
                         var handler = instance ?? scope.ServiceProvider.GetRequiredService<T>();
-                        
-                        try
-                        {
-                            var messageContext = Activator.CreateInstance(messageContextActualType, model, message);
-                            await (Task)(handleMethod.Invoke(handler, new[] { messageContext, cancellationToken }) ?? throw new InvalidOperationException());
-                        }
-                        catch (Exception)
-                        {
-                            throw;
-                        }
+                        var messageContext = Activator.CreateInstance(messageContextActualType, model, message);
+                        await (Task)(handleMethod.Invoke(handler, new[] { messageContext, cancellationToken }) ?? throw new InvalidOperationException());
                     }));
                 }
                 else
@@ -83,19 +75,11 @@ namespace MessageBox
                         {
                             using var scope = sp.CreateScope();
                             var handler = instance ?? scope.ServiceProvider.GetRequiredService<T>();
+                            var messageContext = Activator.CreateInstance(messageContextActualType, model, message);
+                            var task = (Task)(handleMethod.Invoke(handler, new[] { messageContext, cancellationToken }) ?? throw new InvalidOperationException());
+                            await task;
 
-                            try
-                            {
-                                var messageContext = Activator.CreateInstance(messageContextActualType, model, message);
-                                var task = (Task)(handleMethod.Invoke(handler, new[] { messageContext, cancellationToken }) ?? throw new InvalidOperationException());
-                                await task;
-
-                                return resultProperty.GetValue(task);
-                            }
-                            catch (Exception)
-                            {
-                                throw;
-                            }
+                            return resultProperty.GetValue(task);
                         }));
                 }
             }
