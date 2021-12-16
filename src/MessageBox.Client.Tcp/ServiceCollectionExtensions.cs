@@ -11,16 +11,16 @@ namespace MessageBox
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddMessageBoxTcpClient(this IServiceCollection serviceCollection, TcpTransportOptions options)
+        public static IServiceCollection AddMessageBoxTcpClient(this IServiceCollection serviceCollection, TcpBusClientOptions options)
         {
-            serviceCollection.AddMessageBoxClient();
+            serviceCollection.AddMessageBoxClient(options);
             serviceCollection.AddSingleton<ITransportFactory>(sp => new Client.Tcp.Implementation.ClientTransportFactory(sp, options));
             serviceCollection.AddMessageBoxBackgroundService();
 
             return serviceCollection;
         }
 
-        public static IHostBuilder AddMessageBoxTcpClient(this IHostBuilder hostBuilder, TcpTransportOptions options)
+        public static IHostBuilder AddMessageBoxTcpClient(this IHostBuilder hostBuilder, TcpBusClientOptions options)
         {
             hostBuilder.ConfigureServices((ctx, services) => services.AddMessageBoxTcpClient(options));
             return hostBuilder;
@@ -28,15 +28,19 @@ namespace MessageBox
 
         public static IHostBuilder AddMessageBoxTcpClient(this IHostBuilder hostBuilder, IPAddress address, int port)
         {
-            hostBuilder.ConfigureServices((ctx, services) => services.AddMessageBoxTcpClient(new TcpTransportOptions(address, port)));
+            hostBuilder.ConfigureServices((ctx, services) => services.AddMessageBoxTcpClient(new TcpBusClientOptions(address, port)));
             return hostBuilder;
         }
 
         public static IHostBuilder AddMessageBoxTcpClient(this IHostBuilder hostBuilder, string ipString, int port)
         {
-            hostBuilder.ConfigureServices((ctx, services) => services.AddMessageBoxTcpClient(new TcpTransportOptions(ipString, port)));
+            hostBuilder.ConfigureServices((ctx, services) => services.AddMessageBoxTcpClient(new TcpBusClientOptions(ipString, port)));
+            return hostBuilder;
+        }
+        public static IHostBuilder AddMessageBoxTcpClient(this IHostBuilder hostBuilder, Func<TcpBusClientOptions> configureBusAction)
+        {
+            hostBuilder.ConfigureServices((ctx, services) => services.AddMessageBoxTcpClient(configureBusAction()));
             return hostBuilder;
         }
     }
-
 }

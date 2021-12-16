@@ -11,9 +11,9 @@ namespace MessageBox
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddMessageBoxClient(this IServiceCollection serviceCollection)
+        public static IServiceCollection AddMessageBoxClient(this IServiceCollection serviceCollection, IBusClientOptions options)
         {
-            serviceCollection.AddSingleton<Bus>();
+            serviceCollection.AddSingleton<Bus>(sp => new Bus(sp, options));
             serviceCollection.AddSingleton<IBus>(sp => sp.GetRequiredService<Bus>());
             serviceCollection.AddSingleton<IMessageSink>(sp => sp.GetRequiredService<Bus>());
             serviceCollection.AddSingleton<IMessageSource>(sp => sp.GetRequiredService<Bus>());

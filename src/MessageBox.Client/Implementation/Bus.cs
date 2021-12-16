@@ -32,6 +32,7 @@ namespace MessageBox.Client.Implementation
         }
 
         private readonly IServiceProvider _serviceProvider;
+        private readonly IBusClientOptions _options;
         private readonly IMessageSerializerFactory _messageSerializerFactory;
         private readonly ITransport _transport;
 
@@ -44,13 +45,13 @@ namespace MessageBox.Client.Implementation
         private readonly ActionBlock<Message> _innomingMessages;
 
         public Bus(
-            ITransportFactory transportFactory, 
-            IMessageSerializerFactory messageSerializerFactory, 
-            IServiceProvider serviceProvider)
+            IServiceProvider serviceProvider,
+            IBusClientOptions options)
         {
-            _transport = transportFactory.Create();
-            _messageSerializerFactory = messageSerializerFactory;
+            _transport = serviceProvider.GetRequiredService<ITransportFactory>().Create();
+            _messageSerializerFactory = serviceProvider.GetRequiredService<IMessageSerializerFactory>();
             _serviceProvider = serviceProvider;
+            _options = options;
             _innomingMessages = new ActionBlock<Message>(ProcessIncomingMessage);
         }
 
