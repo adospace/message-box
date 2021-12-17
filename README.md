@@ -117,6 +117,20 @@ class SampleConsumer : IHandler<EventModel>
 ```
 Finally let's add the client code that actually publishes the event model
 ```c#
+using var clientHost = Host.CreateDefaultBuilder()
+    .AddMessageBoxTcpClient(System.Net.IPAddress.Loopback, 12000)
+    .AddJsonSerializer()
+    .Build();
+
+clientHost.Start();
+
+var client = clientHost.Services.GetRequiredService<IBusClient>();
+
+string? eventDesc;
+while ((eventDesc = Console.ReadLine()) != null)
+{
+    await client.Publish(new EventModel(eventDesc));
+}
 ```
 
 
