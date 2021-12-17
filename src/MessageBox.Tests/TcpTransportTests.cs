@@ -49,20 +49,12 @@ namespace MessageBox.Tests
             using var clientHost = Host.CreateDefaultBuilder()
                 .AddMessageBoxTcpClient(IPAddress.Loopback, 12000)
                 .AddJsonSerializer()
-                .ConfigureLogging((_, logging) => 
-                {
-                    logging.SetMinimumLevel(LogLevel.Trace);
-                })
                 .Build();
 
             using var consumerHost = Host.CreateDefaultBuilder()
                 .AddMessageBoxTcpClient(IPAddress.Loopback, 12000)
                 .AddJsonSerializer()
                 .AddConsumer<SampleConsumer>()
-                .ConfigureLogging((_, logging) => 
-                {
-                    logging.SetMinimumLevel(LogLevel.Trace);
-                })
                 .Build();
 
             await serverHost.StartAsync();
@@ -151,7 +143,7 @@ namespace MessageBox.Tests
 
             var reply = await busClient.SendAndGetReply<SampleModelReply>(new SampleModel("John", "Smith"));
 
-            await Task.Delay(1000);
+            await Task.Delay(2000);
 
             Assert.AreEqual("Hello John Smith!", reply.NameAndSurname);
 
