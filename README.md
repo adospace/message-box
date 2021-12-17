@@ -115,7 +115,7 @@ class SampleConsumer : IHandler<EventModel>
     }
 }
 ```
-Finally let's add the client code that actually publishes the event model
+Finally let's add the client code that actually publishes the event model using the ```IBusClient.Publish<T>()``` method:
 ```c#
 using var clientHost = Host.CreateDefaultBuilder()
     .AddMessageBoxTcpClient(System.Net.IPAddress.Loopback, 12000)
@@ -132,5 +132,60 @@ while ((eventDesc = Console.ReadLine()) != null)
     await client.Publish(new EventModel(eventDesc));
 }
 ```
+Running the apps you should be able to see how messages are published from the client and sent to the consumer. 
 
+Try to run more than one client and/or comsumer to experience how each published message is received by all consumers.
+
+RPC pattern requires instead that each messare has a reply from the consumer. Implementing this patter in MessageBox is easy as well, we just need to change the way client send the message using one of the following method:
+1. ```IBusClient.Send<T>()``` to send a message and wait for an ack without a reply message
+2. ```IBusClient.SendAndGetReply<T>()``` to send a message and wait for a reply message
+
+So to demostrate how deal with RPC in MessageBox just add a few more models to the shared project like these:
+```c#
+public record CommandResultModel(int Result);
+public record ExecuteCommandModel(int X);
+public record ExecuteCommandWithReplyModel(int X);
+```
+
+Add two more handlers to the consumer class:
+```c#
+class SampleConsumer : IHandler<EventModel>, IHandler<ExecuteCommandModel>
+{
+    public Task Handle(IMessageContext<EventModel> messageContext, CancellationToken cancellationToken = default)
+    {
+        Console.WriteLine($"Received event from client: {messageContext.Model.Description}");
+        return Task.CompletedTask;
+    }
+
+    public Task Handle(IMessageContext<ExecuteCommandModel> messageContext, CancellationToken cancellationToken = default)
+    {
+        Console.WriteLine($"Executing command with parameters: {messageContext.Model}");
+        return Task.CompletedTask;
+    }
+    public Task<CommandResultModel> Handle(IMessageContext<ExecuteCommandWithReplyModel> messageContext, CancellationToken cancellationToken = default)
+    {
+        Console.WriteLine($"Executing command and reply with parameters: {messageContext.Model}");
+        return Task.FromResult(new CommandResultModel(messageContext.Model.X  * 2));
+    }
+}
+```
+
+Finally replace the while loop in the client project with a code like the below:
+```c#
+string? valueString;
+while ((valueString = Console.ReadLine()) != null)
+{
+    if (int.TryParse(valueString, out var value))
+    {
+        //call the consumer and wait until the message is consumed (void-like call)
+        await client.Send(new ExecuteCommandModel(value));
+
+        //call the consumer and wait the reply from it
+        var reply = await client.SendAndGetReply<CommandResultModel>(new ExecuteCommandWithReplyModel(value));
+        Console.WriteLine($"Reply from consumer: {reply}");
+    }
+}
+```
+
+  
 
