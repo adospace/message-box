@@ -15,6 +15,16 @@ namespace MessageBox
             return serviceCollection;
         }
 
+        public static IServiceCollection AddMessageBoxTcpServer(this IServiceCollection serviceCollection, int port)
+        {
+            return AddMessageBoxTcpServer(serviceCollection, new TcpTransportOptions(port));
+        }
+
+        public static IServiceCollection AddMessageBoxTcpServer(this IServiceCollection serviceCollection, string ipString, int port)
+        {
+            return AddMessageBoxTcpServer(serviceCollection, new TcpTransportOptions(ipString, port));
+        }
+
         public static IHostBuilder AddMessageBoxTcpServer(this IHostBuilder hostBuilder, TcpTransportOptions options)
         {
             hostBuilder.ConfigureServices((_, services) => services.AddMessageBoxTcpServer(options));

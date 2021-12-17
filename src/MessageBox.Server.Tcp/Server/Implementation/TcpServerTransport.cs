@@ -56,7 +56,7 @@ namespace MessageBox.Server.Implementation
             {
                 try
                 {
-                    _logger.LogDebug("Start listening on {ServerEndPoint}", _options.ServerEndPoint);
+                    _logger.LogInformation("Start listening on {ServerEndPoint}", _options.ServerEndPoint);
                     tcpListener.Start();
                 }
                 catch (Exception ex)
@@ -68,7 +68,15 @@ namespace MessageBox.Server.Implementation
 
                 _logger.LogDebug("Accepting connection on {ServerEndPoint}", _options.ServerEndPoint);
 
-                var socketConnectedToClient = await tcpListener.AcceptSocketAsync(cancellationToken);
+                Socket socketConnectedToClient;
+                try
+                {
+                    socketConnectedToClient = await tcpListener.AcceptSocketAsync(cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }                
 
                 _logger.LogDebug("Connection accepted from {RemoteEndPointIp}, begin connection loop", socketConnectedToClient.RemoteEndPoint?.ToString());
 

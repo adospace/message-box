@@ -12,9 +12,15 @@ clientHost.Start();
 
 IBusClient client = clientHost.Services.GetRequiredService<IBusClient>();
 
-string? eventDesc;
-while ((eventDesc = Console.ReadLine()) != null)
+string? valueString;
+while ((valueString = Console.ReadLine()) != null)
 {
-    await client.Publish(new EventModel(eventDesc));
+    if (int.TryParse(valueString, out var value))
+    {
+        await client.Send(new ExecuteCommandModel(value));
+
+        var reply = await client.SendAndGetReply<CommandResultModel>(new ExecuteCommandWithReplyModel(value));
+        Console.WriteLine($"Reply from consumer: {reply}");
+    }
 }
 
