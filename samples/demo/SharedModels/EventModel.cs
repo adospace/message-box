@@ -1,4 +1,4 @@
 ﻿namespace SharedModels
 {
-    public record EventModel;
+    public record EventModel(string Description);
 }

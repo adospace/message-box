@@ -27,7 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MessageBox\MessageBox.csproj" />
+    <ProjectReference Include="..\MessageBox.Core\MessageBox.Core.csproj" />
   </ItemGroup>
 
 </Project>

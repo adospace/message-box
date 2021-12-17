@@ -29,7 +29,7 @@
   <ItemGroup>
     <ProjectReference Include="..\MessageBox.Server\MessageBox.Server.csproj" />
     <ProjectReference Include="..\MessageBox.Tcp\MessageBox.Tcp.csproj" />
-    <ProjectReference Include="..\MessageBox\MessageBox.csproj" />
+    <ProjectReference Include="..\MessageBox.Core\MessageBox.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>
