@@ -6,6 +6,7 @@ It's entirely written in .NET/C# and tries to use all the best practices and lat
 It's not a full fledged product nor it aims to be a one tool for every scenario instead it tries to make message interprocess communication easy to develop and test.
 
 [![Build status](https://ci.appveyor.com/api/projects/status/dkyae4p5jagnu3k4?svg=true)](https://ci.appveyor.com/project/adospace/message-box)
+[![codecov](https://codecov.io/gh/adospace/message-box/branch/main/graph/badge.svg?token=3M6R96NL54)](https://codecov.io/gh/adospace/message-box)
 
 Main features
 - ## Native implementation in .NET highly optimized to reduce memory occupation and CPU usage
@@ -30,7 +31,7 @@ Main features
 - ## Deployment
   A fully working pre-built broker server is provided in the release or as docker container (it also includes a pretty admin dashboard)
   
-  You can also integrate exactly the same the brocker service in a ASP.NET core project
+  You can also integrate exactly the same brocker service in a ASP.NET core project
   
 - ## License
   MessageBox is and always will be completely open-source under the permissive MIT license
