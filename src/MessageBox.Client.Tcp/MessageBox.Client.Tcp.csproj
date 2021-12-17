@@ -4,6 +4,22 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <RootNamespace>MessageBox</RootNamespace>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <Version Condition=" '$(APPVEYOR_BUILD_VERSION)' == '' ">0.0.1-local</Version>
+    <Version Condition=" '$(APPVEYOR_BUILD_VERSION)' != '' ">$(APPVEYOR_BUILD_VERSION)</Version>
+    <Authors>adospace</Authors>
+    <Description>MessageBox is .NET 6+ message broker that just works. Reference this package to connect to a MessageBox TCP Server.</Description>
+    <Copyright>Adolfo Marinucci</Copyright>
+    <PackageId>MessageBox.Tcp.Client</PackageId>
+    <PackageProjectUrl>https://github.com/adospace/message-box</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/adospace/message-box</RepositoryUrl>
+    <PackageTags>.net message broker</PackageTags>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 
   <ItemGroup>

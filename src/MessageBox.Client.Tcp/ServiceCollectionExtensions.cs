@@ -9,7 +9,7 @@ namespace MessageBox
         public static IServiceCollection AddMessageBoxTcpClient(this IServiceCollection serviceCollection, TcpBusClientOptions options)
         {
             serviceCollection.AddMessageBoxClient(options);
-            serviceCollection.AddSingleton<ITransportFactory>(sp => new Client.Tcp.Implementation.ClientTransportFactory(sp, options));
+            serviceCollection.AddSingleton<ITransportFactory>(sp => new Client.Implementation.ClientTransportFactory(sp, options));
             serviceCollection.AddMessageBoxBackgroundService();
 
             return serviceCollection;

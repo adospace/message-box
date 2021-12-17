@@ -1,4 +1,4 @@
-﻿namespace MessageBox.Client.Tcp.Implementation
+﻿namespace MessageBox.Client.Implementation
 {
     internal class ClientTransportFactory : ITransportFactory
     {

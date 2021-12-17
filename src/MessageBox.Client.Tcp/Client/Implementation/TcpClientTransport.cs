@@ -2,7 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using System.Net.Sockets;
 
-namespace MessageBox.Client.Tcp.Implementation
+namespace MessageBox.Client.Implementation
 {
     internal class TcpClientTransport : TcpConnection, ITransport
     {
