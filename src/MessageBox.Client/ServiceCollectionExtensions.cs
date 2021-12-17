@@ -1,11 +1,6 @@
 ﻿using MessageBox.Client.Implementation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MessageBox
 {
@@ -60,7 +55,7 @@ namespace MessageBox
                     {
                         using var scope = sp.CreateScope();
                         var handler = instance ?? scope.ServiceProvider.GetRequiredService<T>();
-                        var messageContext = Activator.CreateInstance(messageContextActualType, model, message);
+                        var messageContext = Activator.CreateInstance(messageContextActualType, model);
                         await (Task)(handleMethod.Invoke(handler, new[] { messageContext, cancellationToken }) ?? throw new InvalidOperationException());
                     }));
                 }
@@ -75,7 +70,7 @@ namespace MessageBox
                         {
                             using var scope = sp.CreateScope();
                             var handler = instance ?? scope.ServiceProvider.GetRequiredService<T>();
-                            var messageContext = Activator.CreateInstance(messageContextActualType, model, message);
+                            var messageContext = Activator.CreateInstance(messageContextActualType, model);
                             var task = (Task)(handleMethod.Invoke(handler, new[] { messageContext, cancellationToken }) ?? throw new InvalidOperationException());
                             await task;
 

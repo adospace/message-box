@@ -1,21 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MessageBox.Client.Implementation
+﻿namespace MessageBox.Client.Implementation
 {
     internal class MessageContext<T> : IMessageContext<T>
     {
-        public MessageContext(T model, Message message)
+        public MessageContext(T model)
         {
             Model = model;
-            Message = message;
         }
 
         public T Model { get; }
-
-        public Message Message { get; }
     }
 }

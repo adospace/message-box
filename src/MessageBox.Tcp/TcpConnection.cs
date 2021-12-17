@@ -6,10 +6,6 @@ namespace MessageBox.Tcp
 {
     public abstract class TcpConnection
     {
-        public TcpConnection()
-        {
-        }
-
         public async void StartConnectionLoop(Socket connectedSocket, IMessageSink messageSink, IMessageSource messageSource, CancellationToken cancellationToken)
             => await RunConnectionLoop(connectedSocket, messageSink, messageSource, cancellationToken);
 
@@ -42,8 +38,8 @@ namespace MessageBox.Tcp
         public async Task RunLoop()
         { 
             var pipe = new Pipe();
-            Task writing = FillPipeAsync(pipe.Writer);
-            Task reading = ReadPipeAsync(pipe.Reader);
+            var writing = FillPipeAsync(pipe.Writer);
+            var reading = ReadPipeAsync(pipe.Reader);
 
             await Task.WhenAll(reading, writing);
         }
@@ -57,9 +53,9 @@ namespace MessageBox.Tcp
                 try
                 {
                     // Allocate at least 512 bytes from the PipeWriter.
-                    Memory<byte> memory = writer.GetMemory(minimumBufferSize);
+                    var memory = writer.GetMemory(minimumBufferSize);
 
-                    int bytesRead = await _connectedSocket.ReceiveAsync(memory, SocketFlags.None, _cancellationToken);
+                    var bytesRead = await _connectedSocket.ReceiveAsync(memory, SocketFlags.None, _cancellationToken);
                     if (bytesRead == 0)
                     {
                         break;
@@ -68,7 +64,7 @@ namespace MessageBox.Tcp
                     // Tell the PipeWriter how much was read from the Socket.
                     writer.Advance(bytesRead);
                     // Make the data available to the PipeReader.
-                    FlushResult result = await writer.FlushAsync(_cancellationToken);
+                    var result = await writer.FlushAsync(_cancellationToken);
 
                     if (result.IsCompleted)
                     {
@@ -97,14 +93,14 @@ namespace MessageBox.Tcp
             {
                 try
                 {
-                    ReadResult result = await reader.ReadAsync(_cancellationToken);
+                    var result = await reader.ReadAsync(_cancellationToken);
 
                     if (result.IsCanceled)
                     {
                         break;
                     }
 
-                    ReadOnlySequence<byte> buffer = result.Buffer;
+                    var buffer = result.Buffer;
 
                     while (Message.TryDeserialize(ref buffer, out var message) && message != null)
                     {
@@ -145,8 +141,8 @@ namespace MessageBox.Tcp
         public async Task RunLoop()
         {
             var pipe = new Pipe();
-            Task writing = FillPipeAsync(pipe.Writer);
-            Task reading = ReadPipeAsync(pipe.Reader);
+            var writing = FillPipeAsync(pipe.Writer);
+            var reading = ReadPipeAsync(pipe.Reader);
 
             await Task.WhenAll(reading, writing);
         }
@@ -169,7 +165,7 @@ namespace MessageBox.Tcp
                 }
 
                 // Make the data available to the PipeReader.
-                FlushResult result = await writer.FlushAsync(_cancellationToken);
+                var result = await writer.FlushAsync(_cancellationToken);
 
                 if (result.IsCompleted)
                 {
@@ -189,7 +185,7 @@ namespace MessageBox.Tcp
             {
                 try
                 {
-                    ReadResult result = await reader.ReadAsync(_cancellationToken);
+                    var result = await reader.ReadAsync(_cancellationToken);
 
                     if (result.IsCanceled)
                     {

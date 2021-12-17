@@ -1,17 +1,12 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Concurrent;
 
 namespace MessageBox.Server.Implementation
 {
     internal class Bus : IBus, IMessageSink, IBusServer
     {
-        private readonly ConcurrentDictionary<string, IBoard> _boards = new(StringComparer.InvariantCultureIgnoreCase);
+        private readonly ConcurrentDictionary<string, IExchange> _boards = new(StringComparer.InvariantCultureIgnoreCase);
 
-        private readonly ConcurrentDictionary<Guid, IBox> _boxes = new();
+        private readonly ConcurrentDictionary<Guid, IQueue> _boxes = new();
 
         private readonly ITransport _transport;
 
@@ -20,24 +15,24 @@ namespace MessageBox.Server.Implementation
             _transport = transportFactory.Create();
         }
 
-        public IBoard GetOrCreateBoard(string key)
+        public IExchange GetOrCreateExchange(string key)
         {
             if (string.IsNullOrWhiteSpace(key))
             {
                 throw new ArgumentException($"'{nameof(key)}' cannot be null or whitespace.", nameof(key));
             }
 
-            return _boards.GetOrAdd(key, key =>
+            return _boards.GetOrAdd(key, _ =>
             {
-                var board = new Board(key);
+                var board = new Exchange(_);
                 board.Start();
                 return board;
             });
         }
 
-        public IBox GetOrCreateBox(Guid id)
+        public IQueue GetOrCreateQueue(Guid id)
         {
-            return _boxes.GetOrAdd(id, id => new Box(id));
+            return _boxes.GetOrAdd(id, _ => new Queue(_));
         }
 
         public async Task Run(CancellationToken cancellationToken)
@@ -59,7 +54,7 @@ namespace MessageBox.Server.Implementation
         {
             if (message.BoardKey != null)
             {
-                var board = GetOrCreateBoard(message.BoardKey);
+                var board = GetOrCreateExchange(message.BoardKey);
 
                 if (message.Payload == null && message.PayloadType == null)
                 {
@@ -68,7 +63,7 @@ namespace MessageBox.Server.Implementation
                         throw new InvalidOperationException();
                     }
 
-                    board.Subscribe(GetOrCreateBox(message.ReplyToBoxId.Value));
+                    board.Subscribe(GetOrCreateQueue(message.ReplyToBoxId.Value));
                 }
                 else
                 {
@@ -78,7 +73,7 @@ namespace MessageBox.Server.Implementation
             }
             else if (message.ReplyToBoxId != null)
             {
-                var box = GetOrCreateBox(message.ReplyToBoxId.Value);
+                var box = GetOrCreateQueue(message.ReplyToBoxId.Value);
 
                 await box.OnReceivedMessage(message, cancellationToken);
             }

@@ -1,15 +1,9 @@
-﻿using MessageBox.Tcp;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace MessageBox.Server.Tcp.Implementation
+namespace MessageBox.Server.Implementation
 {
     internal class TcpServerTransport : ITransport
     {
@@ -47,7 +41,7 @@ namespace MessageBox.Server.Tcp.Implementation
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, $"Unable to bind to local address {_options.ServerEndPoint}. Waiting {60000}ms before try again.");
+                    _logger.LogError(ex, "Unable to bind to local address {ServerEndPoint}, waiting 60000ms before try again", _options.ServerEndPoint);
 
                     await Task.Delay(60000, cancellationToken);
                 }
@@ -62,28 +56,28 @@ namespace MessageBox.Server.Tcp.Implementation
             {
                 try
                 {
-                    _logger.LogDebug($"Start listening on {_options.ServerEndPoint}...");
+                    _logger.LogDebug("Start listening on {ServerEndPoint}", _options.ServerEndPoint);
                     tcpListener.Start();
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, $"Unable to listen on {_options.ServerEndPoint}");
+                    _logger.LogError(ex, "Unable to listen on {ServerEndPoint}", _options.ServerEndPoint);
                     await Task.Delay(60000, cancellationToken);
                     continue;
                 }
 
-                _logger.LogDebug($"Accepting connection on {_options.ServerEndPoint}...");
+                _logger.LogDebug("Accepting connection on {ServerEndPoint}", _options.ServerEndPoint);
 
-                Socket? socketConnectedToClient = await tcpListener.AcceptSocketAsync();
+                var socketConnectedToClient = await tcpListener.AcceptSocketAsync(cancellationToken);
 
-                _logger.LogDebug($"Connection accepted from {socketConnectedToClient.RemoteEndPoint}: begin connection loop");
+                _logger.LogDebug("Connection accepted from {RemoteEndPointIp}, begin connection loop", socketConnectedToClient.RemoteEndPoint?.ToString());
 
-                Guid boxId = Guid.NewGuid();
+                var boxId = Guid.NewGuid();
 
                 var bus = _serviceProvider.GetRequiredService<IBusServer>();
                 var messageSink = _serviceProvider.GetRequiredService<IMessageSink>();
 
-                var box = bus.GetOrCreateBox(boxId);
+                var box = bus.GetOrCreateQueue(boxId);
 
                 _clients[boxId] = new ConnectionFromClient(box, id => _clients.TryRemove(id, out var _));
                 _clients[boxId].StartConnectionLoop(socketConnectedToClient, messageSink, box, cancellationToken);

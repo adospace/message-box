@@ -10,12 +10,13 @@ namespace MessageBox.Tests
     [TestClass]
     public class TestingFrameworkTests
     {
-        public record SampleModel(string Name, string Surname);
-        public record SampleModelReply(string NameAndSurname);
+        private record SampleModel(string Name, string Surname);
 
-        public record SampleModelThatRaisesException();
+        private record SampleModelReply(string NameAndSurname);
 
-        public class SampleConsumer : 
+        private record SampleModelThatRaisesException;
+
+        private class SampleConsumer : 
             IHandler<SampleModel, SampleModelReply>,
             IHandler<SampleModelThatRaisesException>
         {
@@ -36,16 +37,16 @@ namespace MessageBox.Tests
         [TestMethod]
         public async Task SendAndReceiveMessage()
         {
-            using IHost serverHost = Host.CreateDefaultBuilder()
+            using var serverHost = Host.CreateDefaultBuilder()
                 .AddMessageBoxInMemoryServer()
                 .Build();
 
-            using IHost clientHost = Host.CreateDefaultBuilder()
+            using var clientHost = Host.CreateDefaultBuilder()
                 .AddMessageBoxInMemoryClient()
                 .AddJsonSerializer()
                 .Build();
 
-            using IHost consumerHost = Host.CreateDefaultBuilder()
+            using var consumerHost = Host.CreateDefaultBuilder()
                 .AddMessageBoxInMemoryClient()
                 .AddJsonSerializer()
                 .AddConsumer<SampleConsumer>()
@@ -64,24 +65,24 @@ namespace MessageBox.Tests
         [TestMethod]
         public async Task SendAndReceiveMessageWithMultipleConsumers()
         {
-            using IHost serverHost = Host.CreateDefaultBuilder()
+            using var serverHost = Host.CreateDefaultBuilder()
                 .AddMessageBoxInMemoryServer()
                 .Build();
 
-            using IHost clientHost = Host.CreateDefaultBuilder()
+            using var clientHost = Host.CreateDefaultBuilder()
                 .AddMessageBoxInMemoryClient()
                 .AddJsonSerializer()
                 .Build();
 
             var consumer1 = new SampleConsumer();
-            using IHost consumerHost1 = Host.CreateDefaultBuilder()
+            using var consumerHost1 = Host.CreateDefaultBuilder()
                 .AddMessageBoxInMemoryClient()
                 .AddJsonSerializer()
                 .AddConsumer(consumer1)
                 .Build();
 
             var consumer2 = new SampleConsumer();
-            using IHost consumerHost2 = Host.CreateDefaultBuilder()
+            using var consumerHost2 = Host.CreateDefaultBuilder()
                 .AddMessageBoxInMemoryClient()
                 .AddJsonSerializer()
                 .AddConsumer(consumer2)
@@ -103,24 +104,24 @@ namespace MessageBox.Tests
         [TestMethod]
         public async Task PublishEventMessageWithMultipleConsumers()
         {
-            using IHost serverHost = Host.CreateDefaultBuilder()
+            using var serverHost = Host.CreateDefaultBuilder()
                 .AddMessageBoxInMemoryServer()
                 .Build();
 
-            using IHost clientHost = Host.CreateDefaultBuilder()
+            using var clientHost = Host.CreateDefaultBuilder()
                 .AddMessageBoxInMemoryClient()
                 .AddJsonSerializer()
                 .Build();
 
             var consumer1 = new SampleConsumer();
-            using IHost consumerHost1 = Host.CreateDefaultBuilder()
+            using var consumerHost1 = Host.CreateDefaultBuilder()
                 .AddMessageBoxInMemoryClient()
                 .AddJsonSerializer()
                 .AddConsumer(consumer1)
                 .Build();
 
             var consumer2 = new SampleConsumer();
-            using IHost consumerHost2 = Host.CreateDefaultBuilder()
+            using var consumerHost2 = Host.CreateDefaultBuilder()
                 .AddMessageBoxInMemoryClient()
                 .AddJsonSerializer()
                 .AddConsumer(consumer2)
@@ -148,24 +149,24 @@ namespace MessageBox.Tests
         [TestMethod]
         public async Task SendMessageWithMultipleConsumers()
         {
-            using IHost serverHost = Host.CreateDefaultBuilder()
+            using var serverHost = Host.CreateDefaultBuilder()
                 .AddMessageBoxInMemoryServer()
                 .Build();
 
-            using IHost clientHost = Host.CreateDefaultBuilder()
+            using var clientHost = Host.CreateDefaultBuilder()
                 .AddMessageBoxInMemoryClient()
                 .AddJsonSerializer()
                 .Build();
 
             var consumer1 = new SampleConsumer();
-            using IHost consumerHost1 = Host.CreateDefaultBuilder()
+            using var consumerHost1 = Host.CreateDefaultBuilder()
                 .AddMessageBoxInMemoryClient()
                 .AddJsonSerializer()
                 .AddConsumer(consumer1)
                 .Build();
 
             var consumer2 = new SampleConsumer();
-            using IHost consumerHost2 = Host.CreateDefaultBuilder()
+            using var consumerHost2 = Host.CreateDefaultBuilder()
                 .AddMessageBoxInMemoryClient()
                 .AddJsonSerializer()
                 .AddConsumer(consumer2)
@@ -185,19 +186,13 @@ namespace MessageBox.Tests
         [TestMethod]
         public async Task SendAndReceiveMessageWhenConsumerIsAvailable()
         {
-            using IHost serverHost = Host.CreateDefaultBuilder()
+            using var serverHost = Host.CreateDefaultBuilder()
                 .AddMessageBoxInMemoryServer()
                 .Build();
 
-            using IHost clientHost = Host.CreateDefaultBuilder()
+            using var clientHost = Host.CreateDefaultBuilder()
                 .AddMessageBoxInMemoryClient()
                 .AddJsonSerializer()
-                .Build();
-
-            using IHost consumerHost = Host.CreateDefaultBuilder()
-                .AddMessageBoxInMemoryClient()
-                .AddJsonSerializer()
-                .AddConsumer<SampleConsumer>()
                 .Build();
 
             await serverHost.StartAsync();
@@ -207,8 +202,17 @@ namespace MessageBox.Tests
             var replyTask = busClient.SendAndGetReply<SampleModelReply>(new SampleModel("John", "Smith"));
             var startConsumerHostTask = Task.Run(async () =>
             {
-                await Task.Delay(4000);
+                using var consumerHost = Host.CreateDefaultBuilder()
+                    .AddMessageBoxInMemoryClient()
+                    .AddJsonSerializer()
+                    .AddConsumer<SampleConsumer>()
+                    .Build();
+                
+                await Task.Delay(2000);
+                
                 await consumerHost.StartAsync();
+                
+                await Task.Delay(2000);
             });
 
             Task.WaitAll(replyTask, startConsumerHostTask);
@@ -219,16 +223,16 @@ namespace MessageBox.Tests
         [TestMethod]
         public async Task SendAndConsumerThrowsException()
         {
-            using IHost serverHost = Host.CreateDefaultBuilder()
+            using var serverHost = Host.CreateDefaultBuilder()
                 .AddMessageBoxInMemoryServer()
                 .Build();
 
-            using IHost clientHost = Host.CreateDefaultBuilder()
+            using var clientHost = Host.CreateDefaultBuilder()
                 .AddMessageBoxInMemoryClient()
                 .AddJsonSerializer()
                 .Build();
 
-            using IHost consumerHost = Host.CreateDefaultBuilder()
+            using var consumerHost = Host.CreateDefaultBuilder()
                 .AddMessageBoxInMemoryClient()
                 .AddJsonSerializer()
                 .AddConsumer<SampleConsumer>()

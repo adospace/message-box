@@ -1,6 +1,6 @@
 ﻿namespace MessageBox
 {
-    public interface IMessageContext<T>
+    public interface IMessageContext<out T>
     { 
         T Model { get; }
     }

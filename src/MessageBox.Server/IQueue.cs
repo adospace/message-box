@@ -1,6 +1,6 @@
 ﻿namespace MessageBox
 {
-    public interface IBox : IMessageSource, IMessageSink
+    public interface IQueue : IMessageSource, IMessageSink
     {
         Guid Id { get; }
     }

@@ -4,6 +4,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <RootNamespace>MessageBox</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,6 +15,10 @@
     <ProjectReference Include="..\MessageBox.Server\MessageBox.Server.csproj" />
     <ProjectReference Include="..\MessageBox.Tcp\MessageBox.Tcp.csproj" />
     <ProjectReference Include="..\MessageBox\MessageBox.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Server" />
   </ItemGroup>
 
 </Project>

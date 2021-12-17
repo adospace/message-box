@@ -1,7 +1,6 @@
-﻿using MessageBox.Client;
-using MessageBox.Server;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+// ReSharper disable MemberCanBePrivate.Global
 
 namespace MessageBox.Testing
 {
@@ -15,9 +14,9 @@ namespace MessageBox.Testing
 
             return serviceCollection;
         }
-        public static IServiceCollection AddMessageBoxInMemoryClient(this IServiceCollection serviceCollection)
+        public static IServiceCollection AddMessageBoxInMemoryClient(this IServiceCollection serviceCollection, InMemoryBusClientOptions? options = null)
         {
-            serviceCollection.AddMessageBoxClient();
+            serviceCollection.AddMessageBoxClient(options ?? new InMemoryBusClientOptions());
             serviceCollection.AddSingleton<ITransportFactory, Implementation.ClientTransportFactory>();
             serviceCollection.AddMessageBoxBackgroundService();
 
@@ -26,13 +25,13 @@ namespace MessageBox.Testing
 
         public static IHostBuilder AddMessageBoxInMemoryServer(this IHostBuilder hostBuilder)
         {
-            hostBuilder.ConfigureServices((ctx, services) => services.AddMessageBoxInMemoryServer());
+            hostBuilder.ConfigureServices((_, services) => services.AddMessageBoxInMemoryServer());
             return hostBuilder;
         }
 
         public static IHostBuilder AddMessageBoxInMemoryClient(this IHostBuilder hostBuilder)
         {
-            hostBuilder.ConfigureServices((ctx, services) => services.AddMessageBoxInMemoryClient());
+            hostBuilder.ConfigureServices((_, services) => services.AddMessageBoxInMemoryClient());
             return hostBuilder;
         }
     }

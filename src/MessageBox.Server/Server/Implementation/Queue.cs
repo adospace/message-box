@@ -1,18 +1,12 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Channels;
-using System.Threading.Tasks;
+﻿using System.Threading.Channels;
 
 namespace MessageBox.Server.Implementation
 {
-    internal class Box : IBox
+    internal class Queue : IQueue
     {
         private readonly Channel<Message> _outgoingMessages = Channel.CreateUnbounded<Message>();
 
-        public Box(Guid id)
+        public Queue(Guid id)
         {
             Id = id;
         }

@@ -2,38 +2,38 @@
 using MessageBox.Tcp;
 using System.Net.Sockets;
 
-namespace MessageBox.Server.Tcp.Implementation
+namespace MessageBox.Server.Implementation
 {
     internal class ConnectionFromClient : TcpConnection
     {
         private class ConnectionFromClientForBoxWrapper : IMessageSink
         {
-            private readonly IBox _box;
+            private readonly IQueue _queue;
             private readonly IMessageSink _originalMessageSink;
 
-            public ConnectionFromClientForBoxWrapper(IBox box, IMessageSink originalMessageSink)
+            public ConnectionFromClientForBoxWrapper(IQueue queue, IMessageSink originalMessageSink)
             {
-                _box = box;
+                _queue = queue;
                 _originalMessageSink = originalMessageSink;
             }
 
             public Task OnReceivedMessage(Message message, CancellationToken cancellationToken = default) 
-                => _originalMessageSink.OnReceivedMessage(message.ReplyToBoxId != null ? message : message with { ReplyToBoxId = _box.Id }, cancellationToken);
+                => _originalMessageSink.OnReceivedMessage(message.ReplyToBoxId != null ? message : message with { ReplyToBoxId = _queue.Id }, cancellationToken);
         }
 
-        private readonly IBox _box;
+        private readonly IQueue _queue;
         private readonly Action<Guid> _actionWhenSocketConnectionFails;
 
-        public ConnectionFromClient(IBox box, Action<Guid> actionWhenSocketConnectionFails)
+        public ConnectionFromClient(IQueue queue, Action<Guid> actionWhenSocketConnectionFails)
         {
-            _box = box;
+            _queue = queue;
             _actionWhenSocketConnectionFails = actionWhenSocketConnectionFails;
         }
 
         protected override Task RunConnectionLoop(Socket connectedSocket, IMessageSink messageSink, IMessageSource messageSource, CancellationToken cancellationToken) 
-            => base.RunConnectionLoop(connectedSocket, new ConnectionFromClientForBoxWrapper(_box, messageSink), messageSource, cancellationToken);
+            => base.RunConnectionLoop(connectedSocket, new ConnectionFromClientForBoxWrapper(_queue, messageSink), messageSource, cancellationToken);
 
         protected override void OnConnectionLoopEnded() => 
-            _actionWhenSocketConnectionFails.Invoke(_box.Id);
+            _actionWhenSocketConnectionFails.Invoke(_queue.Id);
     }
 }

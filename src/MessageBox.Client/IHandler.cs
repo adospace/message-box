@@ -1,21 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MessageBox
+﻿namespace MessageBox
 {
     public interface IHandler
     { }
 
-    public interface IHandler<T> : IHandler where T : class
+    public interface IHandler<in T> : IHandler where T : class
     {
         Task Handle(IMessageContext<T> messageContext, CancellationToken cancellationToken = default);
     }
 
-    public interface IHandler<T, RType> : IHandler where T : class
+    public interface IHandler<in T, TRType> : IHandler where T : class
     {
-        Task<RType> Handle(IMessageContext<T> messageContext, CancellationToken cancellationToken = default);
+        Task<TRType> Handle(IMessageContext<T> messageContext, CancellationToken cancellationToken = default);
     }
 }

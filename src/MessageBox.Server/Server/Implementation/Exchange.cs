@@ -1,27 +1,22 @@
 ﻿using Nito.AsyncEx;
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Channels;
-using System.Threading.Tasks;
 
 namespace MessageBox.Server.Implementation
 {
-    internal class Board : IBoard
+    internal class Exchange : IExchange
     {
         private readonly Channel<Message> _outgoingMessages = Channel.CreateUnbounded<Message>();
 
-        private readonly ConcurrentDictionary<Guid, WeakReference<IBox>> _subscribers = new();
+        private readonly ConcurrentDictionary<Guid, WeakReference<IQueue>> _subscribers = new();
 
-        private readonly ConcurrentQueue<WeakReference<IBox>> _subscribersQueue = new();
+        private readonly ConcurrentQueue<WeakReference<IQueue>> _subscribersQueue = new();
 
         private readonly CancellationTokenSource _cancellationTokenSource = new();
 
         private readonly AsyncAutoResetEvent _subscribersListIsEmptyEvent = new();
 
-        public Board(string key)
+        public Exchange(string key)
         {
             Key = key;
         }
@@ -33,10 +28,10 @@ namespace MessageBox.Server.Implementation
             await _outgoingMessages.Writer.WriteAsync(message, cancellationToken);
         }
 
-        public void Subscribe(IBox box)
+        public void Subscribe(IQueue queue)
         {
-            var refToBox = new WeakReference<IBox>(box);
-            _subscribers[box.Id] = refToBox;
+            var refToBox = new WeakReference<IQueue>(queue);
+            _subscribers[queue.Id] = refToBox;
             _subscribersQueue.Enqueue(refToBox);
 
             _subscribersListIsEmptyEvent.Set();

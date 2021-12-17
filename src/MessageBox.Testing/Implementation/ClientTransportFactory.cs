@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MessageBox.Testing.Implementation
+﻿namespace MessageBox.Testing.Implementation
 {
     internal class ClientTransportFactory : ITransportFactory
     {
