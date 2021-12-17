@@ -23,11 +23,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MessageBox.Client.Tcp", "Me
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Admin", "Admin", "{7B42BEEC-9BF5-42C7-ABC9-F302BA2A3B81}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessageBox.Server.Tcp.Host.Server", "Admin\MessageBox.Server.Tcp.Host\Server\MessageBox.Server.Tcp.Host.Server.csproj", "{79853DF7-9DAA-4B6A-BF35-299E1EF86947}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessageBox.Server.Tcp.Host.Server", "Admin\Server\MessageBox.Server.Tcp.Host.Server.csproj", "{79853DF7-9DAA-4B6A-BF35-299E1EF86947}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessageBox.Server.Tcp.Host.Client", "Admin\MessageBox.Server.Tcp.Host\Client\MessageBox.Server.Tcp.Host.Client.csproj", "{01EC9348-1E4A-4933-A5C0-7C567B79CDEA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessageBox.Server.Tcp.Host.Client", "Admin\Client\MessageBox.Server.Tcp.Host.Client.csproj", "{01EC9348-1E4A-4933-A5C0-7C567B79CDEA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessageBox.Server.Tcp.Host.Shared", "Admin\MessageBox.Server.Tcp.Host\Shared\MessageBox.Server.Tcp.Host.Shared.csproj", "{8981620B-FB7B-4AFB-9A8D-44A65F23F537}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessageBox.Server.Tcp.Host.Shared", "Admin\Shared\MessageBox.Server.Tcp.Host.Shared.csproj", "{8981620B-FB7B-4AFB-9A8D-44A65F23F537}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{42C36A73-B454-48F2-9A0E-EE18342BB5EA}"
 EndProject
