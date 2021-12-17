@@ -151,7 +151,7 @@ public record ExecuteCommandWithReplyModel(int X);
 
 Add two more handlers to the consumer class:
 ```c#
-class SampleConsumer : IHandler<EventModel>, IHandler<ExecuteCommandModel>
+class SampleConsumer : IHandler<EventModel>, IHandler<ExecuteCommandModel>, IHandler<ExecuteCommandWithReplyModel, CommandResultModel>
 {
     public Task Handle(IMessageContext<EventModel> messageContext, CancellationToken cancellationToken = default)
     {
@@ -164,6 +164,7 @@ class SampleConsumer : IHandler<EventModel>, IHandler<ExecuteCommandModel>
         Console.WriteLine($"Executing command with parameters: {messageContext.Model}");
         return Task.CompletedTask;
     }
+
     public Task<CommandResultModel> Handle(IMessageContext<ExecuteCommandWithReplyModel> messageContext, CancellationToken cancellationToken = default)
     {
         Console.WriteLine($"Executing command and reply with parameters: {messageContext.Model}");
