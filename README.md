@@ -1,6 +1,8 @@
 # MessageBox .NET Message Broker
 MessageBox is a .NET 6 message broker that aims to simplify message communication between services in a microservice architecture. 
+
 It's entirely written in .NET/C# and tries to use all the best practices and latest features of the framework in order to reduce memory consumption and CPU usage while leverage optimal perfomance for many use cases. 
+
 It's not a full fledged product nor it aims to be a one tool for every scenario instead it tries to make message interprocess communication easy to develop and test.
 
 [![Build status](https://ci.appveyor.com/api/projects/status/dkyae4p5jagnu3k4?svg=true)](https://ci.appveyor.com/project/adospace/message-box)
