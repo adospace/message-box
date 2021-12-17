@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\MessageBox.Server.Tcp\MessageBox.Server.Tcp.csproj" />
+    <ProjectReference Include="..\..\MessageBox.Server.Tcp\MessageBox.Server.Tcp.csproj" />
     <ProjectReference Include="..\Client\MessageBox.Server.Tcp.Host.Client.csproj" />
     <ProjectReference Include="..\Shared\MessageBox.Server.Tcp.Host.Shared.csproj" />
   </ItemGroup>
