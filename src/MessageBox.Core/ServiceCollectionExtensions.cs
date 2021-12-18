@@ -8,6 +8,7 @@ namespace MessageBox
         public static IServiceCollection AddMessageBoxBackgroundService(this IServiceCollection serviceCollection)
         {
             serviceCollection.AddHostedService<Implementation.BusService>();
+            serviceCollection.AddSingleton<Messages.IMessageFactory, Messages.Implementation.MessageFactory>();
 
             return serviceCollection;
         }
