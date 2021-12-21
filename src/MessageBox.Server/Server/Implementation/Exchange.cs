@@ -40,61 +40,66 @@ namespace MessageBox.Server.Implementation
 
         public async void Start()
         {
-            while (!_cancellationTokenSource.IsCancellationRequested)
+            try
             {
-                var message = await _outgoingMessages.Reader.ReadAsync(_cancellationTokenSource.Token);
-
-                if (_cancellationTokenSource.IsCancellationRequested)
+                while (!_cancellationTokenSource.IsCancellationRequested)
                 {
-                    break;
-                }
+                    var message = await _outgoingMessages.Reader.ReadAsync(_cancellationTokenSource.Token);
 
-                while (true)
-                {
-                    if (message is IPublishEventMessage publishEventMessage)
+                    if (_cancellationTokenSource.IsCancellationRequested)
                     {
-                        foreach (var subsriber in _subscribers.ToArray())
-                        {
-                            if (subsriber.Value.TryGetTarget(out var queue))
-                            {
-                                await queue.OnReceivedMessage(message, _cancellationTokenSource.Token);
-                            }
-                            else
-                            {
-                                _subscribers.Remove(subsriber.Key, out var _);
-                            }
-                        }
-
-                        if (!_subscribers.IsEmpty)
-                        {
-                            break;
-                        }
+                        break;
                     }
-                    else
+
+                    while (true)
                     {
-                        while (true)
+                        if (message is IPublishEventMessage publishEventMessage)
                         {
-                            if (!_subscribersQueue.TryDequeue(out var boxReference))
+                            foreach (var subsriber in _subscribers.ToArray())
+                            {
+                                if (subsriber.Value.TryGetTarget(out var queue))
+                                {
+                                    await queue.OnReceivedMessage(message, _cancellationTokenSource.Token);
+                                }
+                                else
+                                {
+                                    _subscribers.Remove(subsriber.Key, out var _);
+                                }
+                            }
+
+                            if (!_subscribers.IsEmpty)
+                            {
                                 break;
-
-                            if (!boxReference.TryGetTarget(out var queue))
-                                continue;
-
-                            await queue.OnReceivedMessage(message, _cancellationTokenSource.Token);
-
-                            _subscribersQueue.Enqueue(boxReference);
-                            break;
+                            }
                         }
-
-                        if (!_subscribersQueue.IsEmpty)
+                        else
                         {
-                            break;
+                            while (true)
+                            {
+                                if (!_subscribersQueue.TryDequeue(out var boxReference))
+                                    break;
+
+                                if (!boxReference.TryGetTarget(out var queue))
+                                    continue;
+
+                                await queue.OnReceivedMessage(message, _cancellationTokenSource.Token);
+
+                                _subscribersQueue.Enqueue(boxReference);
+                                break;
+                            }
+
+                            if (!_subscribersQueue.IsEmpty)
+                            {
+                                break;
+                            }
                         }
+
+                        await _subscribersListIsEmptyEvent.WaitAsync(_cancellationTokenSource.Token);
                     }
-
-                    await _subscribersListIsEmptyEvent.WaitAsync(_cancellationTokenSource.Token);
                 }
-
+            }
+            catch (OperationCanceledException)
+            { 
             }
         }
 

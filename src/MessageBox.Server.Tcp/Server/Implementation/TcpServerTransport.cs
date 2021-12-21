@@ -66,31 +66,34 @@ namespace MessageBox.Server.Implementation
                     continue;
                 }
 
-                _logger.LogDebug("Accepting connection on {ServerEndPoint}", _options.ServerEndPoint);
-
-                Socket socketConnectedToClient;
-                try
+                while (!cancellationToken.IsCancellationRequested)
                 {
-                    socketConnectedToClient = await tcpListener.AcceptSocketAsync(cancellationToken);
+                    Socket socketConnectedToClient;
+                    try
+                    {
+                        socketConnectedToClient = await tcpListener.AcceptSocketAsync(cancellationToken);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
+
+                    _logger.LogInformation("Connection accepted from {RemoteEndPointIp}, begin connection loop", socketConnectedToClient.RemoteEndPoint?.ToString());
+
+                    var queueId = Guid.NewGuid();
+
+                    var bus = _serviceProvider.GetRequiredService<IBusServer>();
+                    var messageSink = _serviceProvider.GetRequiredService<IMessageSink>();
+
+                    var queue = bus.GetOrCreateQueue(queueId);
+
+                    _clients[queueId] = new ConnectionFromClient(_serviceProvider, queue, id => _clients.TryRemove(id, out var _));
+
+                    _clients[queueId].StartConnectionLoop(socketConnectedToClient, queue, messageSink, cancellationToken);
                 }
-                catch (OperationCanceledException)
-                {
-                    break;
-                }                
-
-                _logger.LogDebug("Connection accepted from {RemoteEndPointIp}, begin connection loop", socketConnectedToClient.RemoteEndPoint?.ToString());
-
-                var queueId = Guid.NewGuid();
-
-                var bus = _serviceProvider.GetRequiredService<IBusServer>();
-                var messageSink = _serviceProvider.GetRequiredService<IMessageSink>();
-
-                var queue = bus.GetOrCreateQueue(queueId);
-
-                _clients[queueId] = new ConnectionFromClient(_serviceProvider, queue, id => _clients.TryRemove(id, out var _));
-
-                _clients[queueId].StartConnectionLoop(socketConnectedToClient, queue, messageSink, cancellationToken);
             }
+
+            tcpListener?.Stop();
         }
 
     }

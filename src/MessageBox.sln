@@ -23,23 +23,27 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MessageBox.Client.Tcp", "Me
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Admin", "Admin", "{7B42BEEC-9BF5-42C7-ABC9-F302BA2A3B81}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessageBox.Server.Tcp.Host.Server", "Admin\Server\MessageBox.Server.Tcp.Host.Server.csproj", "{79853DF7-9DAA-4B6A-BF35-299E1EF86947}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MessageBox.Server.Tcp.Host.Server", "Admin\Server\MessageBox.Server.Tcp.Host.Server.csproj", "{79853DF7-9DAA-4B6A-BF35-299E1EF86947}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessageBox.Server.Tcp.Host.Client", "Admin\Client\MessageBox.Server.Tcp.Host.Client.csproj", "{01EC9348-1E4A-4933-A5C0-7C567B79CDEA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MessageBox.Server.Tcp.Host.Client", "Admin\Client\MessageBox.Server.Tcp.Host.Client.csproj", "{01EC9348-1E4A-4933-A5C0-7C567B79CDEA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessageBox.Server.Tcp.Host.Shared", "Admin\Shared\MessageBox.Server.Tcp.Host.Shared.csproj", "{8981620B-FB7B-4AFB-9A8D-44A65F23F537}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MessageBox.Server.Tcp.Host.Shared", "Admin\Shared\MessageBox.Server.Tcp.Host.Shared.csproj", "{8981620B-FB7B-4AFB-9A8D-44A65F23F537}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{42C36A73-B454-48F2-9A0E-EE18342BB5EA}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Demo", "Demo", "{B5AFCE86-53F4-47F7-8CF2-31E93316604B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerApp", "..\samples\demo\ServerApp\ServerApp.csproj", "{CDAEFC9A-8A20-4398-84F9-A74C00971C30}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServerApp", "..\samples\demo\ServerApp\ServerApp.csproj", "{CDAEFC9A-8A20-4398-84F9-A74C00971C30}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClientApp", "..\samples\demo\ClientApp\ClientApp.csproj", "{D4E8B837-7F82-413D-99F9-98F9089625B3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ClientApp", "..\samples\demo\ClientApp\ClientApp.csproj", "{D4E8B837-7F82-413D-99F9-98F9089625B3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsumerApp", "..\samples\demo\ConsumerApp\ConsumerApp.csproj", "{7E26F2EA-AC6A-447F-A089-3264DD63C3D9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsumerApp", "..\samples\demo\ConsumerApp\ConsumerApp.csproj", "{7E26F2EA-AC6A-447F-A089-3264DD63C3D9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharedModels", "..\samples\demo\SharedModels\SharedModels.csproj", "{37398116-8CCC-4A61-9C1E-759E95D5BB64}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharedModels", "..\samples\demo\SharedModels\SharedModels.csproj", "{37398116-8CCC-4A61-9C1E-759E95D5BB64}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Benckmark", "Benckmark", "{0B253C46-E363-4D9B-8991-58E05BB353E2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessageBox.Benchmark", "..\samples\benchmark\MessageBox.Benchmark\MessageBox.Benchmark.csproj", "{CA67D233-E5FF-488D-937B-901603707BE3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -111,6 +115,10 @@ Global
 		{37398116-8CCC-4A61-9C1E-759E95D5BB64}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{37398116-8CCC-4A61-9C1E-759E95D5BB64}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{37398116-8CCC-4A61-9C1E-759E95D5BB64}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CA67D233-E5FF-488D-937B-901603707BE3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CA67D233-E5FF-488D-937B-901603707BE3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CA67D233-E5FF-488D-937B-901603707BE3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CA67D233-E5FF-488D-937B-901603707BE3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -124,6 +132,8 @@ Global
 		{D4E8B837-7F82-413D-99F9-98F9089625B3} = {B5AFCE86-53F4-47F7-8CF2-31E93316604B}
 		{7E26F2EA-AC6A-447F-A089-3264DD63C3D9} = {B5AFCE86-53F4-47F7-8CF2-31E93316604B}
 		{37398116-8CCC-4A61-9C1E-759E95D5BB64} = {B5AFCE86-53F4-47F7-8CF2-31E93316604B}
+		{0B253C46-E363-4D9B-8991-58E05BB353E2} = {42C36A73-B454-48F2-9A0E-EE18342BB5EA}
+		{CA67D233-E5FF-488D-937B-901603707BE3} = {0B253C46-E363-4D9B-8991-58E05BB353E2}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {0A2D4BA8-F6F8-4F02-9633-B9839F69CEC9}
