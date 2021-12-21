@@ -6,8 +6,10 @@ using System.Threading.Tasks;
 
 namespace MessageBox.Messages
 {
-    public interface IPublishEventMessage : ITransportMessage
+    public interface IPublishEventMessage : ITransportMessage, IDisposable
     {
+        string ExchangeName { get; }
+
         /// <summary>
         /// Type name of the object serialized in the Payload property
         /// </summary>

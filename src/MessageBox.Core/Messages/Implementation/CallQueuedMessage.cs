@@ -1,46 +1,62 @@
-﻿using System.Buffers;
+﻿using System;
+using System.Buffers;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace MessageBox.Messages.Implementation
 {
-    internal class PublishEventMessage : IPublishEventMessage
+    internal class CallQueuedMessage : ICallQueuedMessage
     {
-        private readonly IMemoryOwner<byte>? _memoryOwner;
         private bool _disposedValue;
+        private IMemoryOwner<byte>? _memoryOwner;
 
-        public PublishEventMessage(string exchangeName, string payloadType, ReadOnlyMemory<byte> payload)
+        public CallQueuedMessage(ICallMessage callMessage, Guid sourceQueueId)
         {
-            Id = Guid.NewGuid();
-            CorrelationId = Guid.NewGuid();
-            ExchangeName = exchangeName;
-            PayloadType = payloadType;
-            Payload = payload;
+            Id = callMessage.Id;
+            CorrelationId = callMessage.CorrelationId;
+            ExchangeName = callMessage.ExchangeName;
+            SourceQueueId = sourceQueueId;
+            PayloadType = callMessage.PayloadType;
+            Payload = callMessage.Payload;
         }
 
-        public PublishEventMessage(Guid id, Guid correlationId, string exchangeName, string payloadType, ReadOnlyMemory<byte> payload, IMemoryOwner<byte> memoryOwner)
+        public CallQueuedMessage(Guid id, Guid correlationId, string exchangeName, Guid sourceQueueId, string payloadType, ReadOnlyMemory<byte> payload, IMemoryOwner<byte> memoryOwner)
         {
             Id = id;
             CorrelationId = correlationId;
             ExchangeName = exchangeName;
+            SourceQueueId = sourceQueueId;
             PayloadType = payloadType;
             Payload = payload;
             _memoryOwner = memoryOwner;
         }
 
+
+        public Guid SourceQueueId { get; }
+
         public string ExchangeName { get; }
+
+        public bool RequireReply { get; }
+
         public string PayloadType { get; }
+
         public ReadOnlyMemory<byte> Payload { get; }
+
 
         public Guid Id { get; }
 
         public Guid CorrelationId { get; }
 
-        public void Serialize(IBufferWriter<byte> writer)
+        public virtual void Serialize(IBufferWriter<byte> writer)
         {
             var binaryWriterEstimator = new MemoryByteBinaryWriter();
             binaryWriterEstimator.Write(Id);
             binaryWriterEstimator.Write(CorrelationId);
             binaryWriterEstimator.Write(ExchangeName);
+            binaryWriterEstimator.Write(SourceQueueId);
             binaryWriterEstimator.Write(PayloadType);
             binaryWriterEstimator.WriteRemainingBuffer(Payload);
 
@@ -48,11 +64,12 @@ namespace MessageBox.Messages.Implementation
 
             var buffer = writer.GetMemory(5 + messageLength);
             var binaryWriter = new MemoryByteBinaryWriter(buffer);
-            binaryWriter.Write((byte)MessageType.PublishEventMessage);
+            binaryWriter.Write((byte)MessageType.CallQueuedMessage);
             binaryWriter.Write(messageLength);
             binaryWriter.Write(Id);
             binaryWriter.Write(CorrelationId);
             binaryWriter.Write(ExchangeName);
+            binaryWriter.Write(SourceQueueId);
             binaryWriter.Write(PayloadType);
             binaryWriter.WriteRemainingBuffer(Payload);
 
@@ -80,10 +97,12 @@ namespace MessageBox.Messages.Implementation
             buffer.Slice(5, messageLength).CopyTo(memoryOwner.Memory.Span);
 
             var reader = new MemoryByteBinaryReader(memoryOwner.Memory);
-            message = new PublishEventMessage(
+ 
+            message = new CallQueuedMessage(
                 id: reader.ReadGuid(),
                 correlationId: reader.ReadGuid(),
                 exchangeName: reader.ReadString(),
+                sourceQueueId: reader.ReadGuid(),
                 payloadType: reader.ReadString(),
                 payload: reader.ReadRemainingBuffer(messageLength),
                 memoryOwner: memoryOwner);
@@ -108,7 +127,7 @@ namespace MessageBox.Messages.Implementation
         }
 
         // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
-        // ~PublishEventMessage()
+        // ~CallQueuedMessage()
         // {
         //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
         //     Dispose(disposing: false);

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using MessageBox.Messages;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace MessageBox.Testing.Implementation
 {
@@ -19,7 +20,7 @@ namespace MessageBox.Testing.Implementation
             while (!cancellationToken.IsCancellationRequested)
             {
                 var messageToSend = await source.GetNextMessageToSend(cancellationToken);
-                await connectedClient.ReceiveMessageFromClient(messageToSend, cancellationToken);
+                await connectedClient.OnReceivedMessage(messageToSend, cancellationToken);
             }
         }
 
@@ -28,7 +29,7 @@ namespace MessageBox.Testing.Implementation
             return Task.CompletedTask;
         }
 
-        internal Task OnReceiveMessageFromServer(Message message, CancellationToken token)
+        internal Task OnReceiveMessageFromServer(IMessage message, CancellationToken token)
         {
             var sink = _serviceProvider.GetRequiredService<IMessageSink>();
             

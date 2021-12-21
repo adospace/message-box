@@ -5,6 +5,8 @@ using System.Reflection;
 using System.Threading.Channels;
 using System.Threading.Tasks.Dataflow;
 using Microsoft.Extensions.Logging;
+using MessageBox.Messages;
+using System.Buffers;
 
 namespace MessageBox.Client.Implementation
 {
@@ -19,22 +21,22 @@ namespace MessageBox.Client.Implementation
 
             public AsyncAutoResetEvent WaitReplyEvent { get; }
 
-            public Message? ReplyMessage { get; set; }
+            public IReplyMessage? ReplyMessage { get; set; }
         }
 
         private readonly IServiceProvider _serviceProvider;
         private readonly IBusClientOptions _options;
         private readonly IMessageSerializerFactory _messageSerializerFactory;
+        private readonly IMessageFactory _messageFactory;
         private readonly ITransport _transport;
         private readonly ILogger<Bus> _logger;
 
-        private readonly Channel<Message> _outgoingMessages = Channel.CreateUnbounded<Message>();
+        private readonly Channel<IMessage> _outgoingMessages = Channel.CreateUnbounded<IMessage>();
 
         private readonly ConcurrentDictionary<Guid, RpcCall> _waitingCalls = new();
         private readonly ConcurrentDictionary<Type, IMessageReceiverCallback> _receiveActionForMessageType = new();
 
-
-        private readonly ActionBlock<Message> _innomingMessages;
+        private readonly ActionBlock<IMessage> _innomingMessages;
 
         public Bus(
             IServiceProvider serviceProvider,
@@ -43,105 +45,165 @@ namespace MessageBox.Client.Implementation
             _logger = serviceProvider.GetRequiredService<ILogger<Bus>>();
             _transport = serviceProvider.GetRequiredService<ITransportFactory>().Create();
             _messageSerializerFactory = serviceProvider.GetRequiredService<IMessageSerializerFactory>();
+            _messageFactory = serviceProvider.GetRequiredService<IMessageFactory>();
             _serviceProvider = serviceProvider;
             _options = options;
-            _innomingMessages = new ActionBlock<Message>(ProcessIncomingMessage, new ExecutionDataflowBlockOptions
+            _innomingMessages = new ActionBlock<IMessage>(ProcessIncomingMessage, new ExecutionDataflowBlockOptions
             { 
                 MaxDegreeOfParallelism = options.MaxDegreeOfParallelism
             });
         }
 
-        private async Task ProcessIncomingMessage(Message message)
+        private async Task ProcessIncomingMessage(IMessage message)
         {
-            using var scope = _logger.BeginScope(new Dictionary<string, object?>
-            {
-                {"MessageId", message.Id},
-                {"ReplyToId", message.ReplyToId},
-                {"RequireReply", message.RequireReply},
-                {"PayloadType", message.PayloadType},
-                {"PayloadSize", message.Payload?.Length},
-                {"CorrelationId", message.CorrelationId},
-            });
+            //using var scope = _logger.BeginScope(new Dictionary<string, object?>
+            //{
+            //    {"MessageId", message.Id},
+            //    {"ReplyToId", message.ReplyToId},
+            //    {"RequireReply", message.RequireReply},
+            //    {"PayloadType", message.PayloadType},
+            //    {"PayloadSize", message.Payload?.Length},
+            //    {"CorrelationId", message.CorrelationId},
+            //});
 
-            if (message.ReplyToId != null)
+            switch (message)
             {
-                if (_waitingCalls.TryGetValue(message.ReplyToId.Value, out var replyHandler))
+                case IReplyMessage replyMessage:
+                    ProcessIncomingMessage(replyMessage);
+                    break;
+                case ICallQueuedMessage callMessage:
+                    await ProcessIncomingMessage(callMessage);
+                    break;
+                case IPublishEventMessage publishEventMessage:
+                    await ProcessIncomingMessage(publishEventMessage);
+                    break;
+                default:
+                    throw new NotSupportedException();
+            }
+
+
+            //message.MessageMemoryOwner?.Dispose();
+        }
+
+        private void ProcessIncomingMessage(IReplyMessage message)
+        { 
+            if (_waitingCalls.TryGetValue(message.ReplyToId, out var replyHandler))
+            {
+                replyHandler.ReplyMessage = message;
+                replyHandler.WaitReplyEvent.Set();
+            }
+        }
+
+        private async Task ProcessIncomingMessage(ICallQueuedMessage message)
+        {
+            var serializer = _messageSerializerFactory.CreateMessageSerializer();
+            var typeOfTheModel = Type.GetType(message.PayloadType ?? throw new InvalidOperationException()) ?? throw new InvalidOperationException($"Unable to find type {message.PayloadType}");
+
+            if (!_receiveActionForMessageType.TryGetValue(typeOfTheModel, out var actionToCallOnReceiver))
+            {
+                _logger.LogWarning("Unable to find an handler for model type {TypeOfTheModel}", typeOfTheModel);
+                return;
+            }
+
+            object deserializedModel;
+
+            try
+            {
+                deserializedModel = serializer.Deserialize(
+                    message.Payload,
+                    typeOfTheModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unable to deserialize model of type {ModelType}", typeOfTheModel);
+                return;
+            }
+
+            object? returnValue;
+
+            try
+            {
+                returnValue = await actionToCallOnReceiver.Call(message, deserializedModel);
+                _logger.LogTrace("Called handler method {ActionToCallOnReceiver}", actionToCallOnReceiver);
+            }
+            catch (Exception ex)
+            {
+                returnValue = new MessageBoxCallException($"Exception raised when calling handler for model type '{typeOfTheModel}:{Environment.NewLine}{ex.InnerException}");
+            }
+
+            byte[]? replyPayload = null;
+
+            if (returnValue != null)
+            {
+                try
                 {
-                    replyHandler.ReplyMessage = message;
-                    replyHandler.WaitReplyEvent.Set();
+                    replyPayload = serializer.Serialize(returnValue);
                 }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Unable to serialize return value of type {ReturnValueType}", returnValue.GetType());
+                    return;
+                }
+
+                _logger.LogTrace("Sending reply with return value: {ReturnValueType} (Size: {ReplyPayloadLength})", returnValue.GetType(), replyPayload.Length);
             }
             else
             {
-                var serializer = _messageSerializerFactory.CreateMessageSerializer();
-                var typeOfTheModel = Type.GetType(message.PayloadType ?? throw new InvalidOperationException()) ?? throw new InvalidOperationException($"Unable to find type {message.PayloadType}");
-
-                if (!_receiveActionForMessageType.TryGetValue(typeOfTheModel, out var actionToCallOnReceiver))
-                {
-                    _logger.LogWarning("Unable to find an handler for model type {TypeOfTheModel}", typeOfTheModel);
-                    return;
-                }
-
-                object deserializedModel;
-            
-                try
-                {
-                    deserializedModel = serializer.Deserialize(message.Payload ?? throw new InvalidOperationException(),
-                        typeOfTheModel);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Unable to deserialize model of type {ModelType}", typeOfTheModel);
-                    return;
-                }
-                
-                object? returnValue;
-
-                try
-                {
-                    returnValue = await actionToCallOnReceiver.Call(message, deserializedModel);
-                    _logger.LogTrace("Called handler method {ActionToCallOnReceiver}", actionToCallOnReceiver);
-                }
-                catch (Exception ex)
-                {
-                    returnValue = new MessageBoxCallException($"Exception raised when calling handler for model type '{typeOfTheModel}:{Environment.NewLine}{ex.InnerException}");
-                }                
-
-                if (message.RequireReply)
-                { 
-                    byte[]? replyPayload = null;
-                    if (returnValue != null)
-                    {
-                        try
-                        {
-                            replyPayload = serializer.Serialize(returnValue);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, "Unable to serialize return value of type {ReturnValueType}", returnValue.GetType());
-                            return;
-                        }
-                        
-                        _logger.LogTrace("Sending reply with return value: {ReturnValueType} (Size: {ReplyPayloadLength})",returnValue.GetType(), replyPayload.Length);
-                    }
-                    else
-                    {
-                        _logger.LogTrace("Reply with no return value");
-                    }
-
-                    await Post(new Message(
-                        Id: Guid.NewGuid(),
-                        ReplyToId: message.Id,
-                        ReplyToBoxId: message.ReplyToBoxId,
-                        CorrelationId: message.CorrelationId,
-                        PayloadType: returnValue?.GetType().AssemblyQualifiedName,
-                        Payload: replyPayload
-                    ));
-                }
+                _logger.LogTrace("Reply with no return value");
             }
 
-            message.MessageMemoryOwner?.Dispose();
+            if (returnValue != null)
+            {
+                await Post(_messageFactory.CreateReplyWithPayloadMessage(
+                    message: message,
+                    payloadType: returnValue?.GetType().AssemblyQualifiedName ?? throw new InvalidOperationException(),
+                    payload: replyPayload));
+            }
+            else
+            {
+                await Post(_messageFactory.CreateReplyMessage(
+                    message: message));
+            }
         }
+
+        private async Task ProcessIncomingMessage(IPublishEventMessage message)
+        {
+            var serializer = _messageSerializerFactory.CreateMessageSerializer();
+            var typeOfTheModel = Type.GetType(message.PayloadType ?? throw new InvalidOperationException()) ?? throw new InvalidOperationException($"Unable to find type {message.PayloadType}");
+
+            if (!_receiveActionForMessageType.TryGetValue(typeOfTheModel, out var actionToCallOnReceiver))
+            {
+                _logger.LogWarning("Unable to find an handler for model type {TypeOfTheModel}", typeOfTheModel);
+                return;
+            }
+
+            object deserializedModel;
+
+            try
+            {
+                deserializedModel = serializer.Deserialize(
+                    message.Payload,
+                    typeOfTheModel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unable to deserialize model of type {ModelType}", typeOfTheModel);
+                return;
+            }
+
+            object? returnValue;
+
+            try
+            {
+                returnValue = await actionToCallOnReceiver.Call(message, deserializedModel);
+                _logger.LogTrace("Called handler method {ActionToCallOnReceiver}", actionToCallOnReceiver);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Called handler method {ActionToCallOnReceiver} raised exception", actionToCallOnReceiver);
+            }
+        }
+
 
         public async Task Run(CancellationToken cancellationToken)
         {
@@ -149,11 +211,9 @@ namespace MessageBox.Client.Implementation
             {
                 _receiveActionForMessageType[receiverCallback.ModelType] = receiverCallback;
 
-                //subscribe to the board
-                await Post(new Message(
-                    Id: Guid.NewGuid(),
-                    BoardKey: receiverCallback.ModelType.FullName), 
-                    cancellationToken);
+                //subscribe to the exchange
+                await Post(_messageFactory.CreateSubsribeMessage(
+                    receiverCallback.ModelType.FullName ?? throw new InvalidOperationException()), cancellationToken);
             }
 
             await _transport.Run(cancellationToken);
@@ -164,17 +224,17 @@ namespace MessageBox.Client.Implementation
             await _transport.Stop(cancellationToken);
         }
 
-        public async Task OnReceivedMessage(Message message, CancellationToken cancellationToken = default)
+        public async Task OnReceivedMessage(IMessage message, CancellationToken cancellationToken = default)
         {
             await _innomingMessages.SendAsync(message, cancellationToken);
         }
 
-        private async Task Post(Message message, CancellationToken cancellationToken = default)
+        private async Task Post(IMessage message, CancellationToken cancellationToken = default)
         {
             await _outgoingMessages.Writer.WriteAsync(message, cancellationToken);
         }
 
-        public async Task<Message> GetNextMessageToSend(CancellationToken cancellationToken)
+        public async Task<IMessage> GetNextMessageToSend(CancellationToken cancellationToken)
         {
             return await _outgoingMessages.Reader.ReadAsync(cancellationToken);
         }
@@ -193,15 +253,11 @@ namespace MessageBox.Client.Implementation
                 _logger.LogError(ex, "Unable to serialize model value of type {ModelType}", model?.GetType());
                 throw;
             }
-            
-            await Post(new Message(
-                Id: Guid.NewGuid(),
-                BoardKey: model.GetType().FullName,
-                CorrelationId: Guid.NewGuid(),
-                IsEvent: true,
-                Payload: modelSerialized,
-                PayloadType: typeof(T).AssemblyQualifiedName
-            ), cancellationToken);
+
+            await Post(_messageFactory.CreatePublishEventMessage(
+                exchangeName: model.GetType().FullName ?? throw new InvalidOperationException(),
+                payloadType: typeof(T).AssemblyQualifiedName ?? throw new InvalidOperationException(),
+                payload: modelSerialized), cancellationToken);
         }
 
         public async Task Send<T>(T model, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
@@ -219,13 +275,10 @@ namespace MessageBox.Client.Implementation
                 throw;
             }
             
-            var message = new Message(
-                Id: Guid.NewGuid(),
-                BoardKey: model.GetType().FullName,
-                CorrelationId: Guid.NewGuid(),
-                Payload: modelSerialized,
-                PayloadType: typeof(T).AssemblyQualifiedName,
-                RequireReply: true
+            var message = _messageFactory.CreateCallMessage(
+                exchangeName: model.GetType().FullName ?? throw new InvalidOperationException(),
+                payloadType: typeof(T).AssemblyQualifiedName ?? throw new InvalidOperationException(),
+                payload: modelSerialized
             );
 
             var call = new RpcCall();
@@ -246,11 +299,10 @@ namespace MessageBox.Client.Implementation
                 _waitingCalls.TryRemove(message.Id, out var _);
             }
 
-            if (call.ReplyMessage is { Payload: { } })
+            if (call.ReplyMessage is IReplyWithPayloadMessage replyWithPayloadMessage)
             {
-                var replyMessage = call.ReplyMessage;
-                var replyMessagePayload = replyMessage.Payload ?? throw new InvalidOperationException();
-                var replyMessagePayloadType = Type.GetType(replyMessage.PayloadType ?? throw new InvalidOperationException()) ?? throw new InvalidOperationException();
+                var replyMessagePayload = replyWithPayloadMessage.Payload;
+                var replyMessagePayloadType = Type.GetType(replyWithPayloadMessage.PayloadType) ?? throw new InvalidOperationException();
                 
                 object deserializedReplyModel;
                 
@@ -288,13 +340,10 @@ namespace MessageBox.Client.Implementation
                 throw;
             }           
 
-            var message = new Message(
-                Id:Guid.NewGuid(),
-                BoardKey: model.GetType().FullName,
-                CorrelationId: Guid.NewGuid(),
-                Payload: modelSerialized,
-                PayloadType: model.GetType().AssemblyQualifiedName,
-                RequireReply: true
+            var message = _messageFactory.CreateCallMessage(
+                exchangeName: model.GetType().FullName ?? throw new InvalidOperationException(),
+                payloadType: model.GetType().AssemblyQualifiedName ?? throw new InvalidOperationException(),
+                payload: modelSerialized
             );
 
             var call = new RpcCall();
@@ -315,9 +364,9 @@ namespace MessageBox.Client.Implementation
                 _waitingCalls.TryRemove(message.Id, out var _);
             }
 
-            var replyMessage = call.ReplyMessage ?? throw new InvalidOperationException();
-            var replyMessagePayload = replyMessage.Payload ?? throw new InvalidOperationException();
-            var replyMessagePayloadType = Type.GetType(replyMessage.PayloadType ?? throw new InvalidOperationException()) ?? throw new InvalidOperationException();
+            var replyMessage = (call.ReplyMessage as IReplyWithPayloadMessage) ?? throw new InvalidOperationException();
+            var replyMessagePayload = replyMessage.Payload;
+            var replyMessagePayloadType = Type.GetType(replyMessage.PayloadType) ?? throw new InvalidOperationException($"Unable to load reply message paylod type '{replyMessage.PayloadType}'");
 
             object deserializedReplyModel;
                 
@@ -337,5 +386,7 @@ namespace MessageBox.Client.Implementation
 
             return (TR)deserializedReplyModel;
         }
+
+
     }
 }

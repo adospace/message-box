@@ -80,15 +80,16 @@ namespace MessageBox.Server.Implementation
 
                 _logger.LogDebug("Connection accepted from {RemoteEndPointIp}, begin connection loop", socketConnectedToClient.RemoteEndPoint?.ToString());
 
-                var boxId = Guid.NewGuid();
+                var queueId = Guid.NewGuid();
 
                 var bus = _serviceProvider.GetRequiredService<IBusServer>();
                 var messageSink = _serviceProvider.GetRequiredService<IMessageSink>();
 
-                var box = bus.GetOrCreateQueue(boxId);
+                var queue = bus.GetOrCreateQueue(queueId);
 
-                _clients[boxId] = new ConnectionFromClient(box, id => _clients.TryRemove(id, out var _));
-                _clients[boxId].StartConnectionLoop(socketConnectedToClient, messageSink, box, cancellationToken);
+                _clients[queueId] = new ConnectionFromClient(_serviceProvider, queue, id => _clients.TryRemove(id, out var _));
+
+                _clients[queueId].StartConnectionLoop(socketConnectedToClient, queue, messageSink, cancellationToken);
             }
         }
 

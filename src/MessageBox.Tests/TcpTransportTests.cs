@@ -5,36 +5,13 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using MessageBox.Tests.Helpers;
 
 namespace MessageBox.Tests
 {
     [TestClass]
     public class TcpTransportTests
     {
-        private record SampleModel(string Name, string Surname);
-
-        private record SampleModelReply(string NameAndSurname);
-
-        private record SampleModelThatRaisesException;
-
-        private class SampleConsumer :
-            IHandler<SampleModel, SampleModelReply>,
-            IHandler<SampleModelThatRaisesException>
-        {
-            public int HandleCallCount { get; private set; }
-            public Task<SampleModelReply> Handle(IMessageContext<SampleModel> messageContext, CancellationToken cancellationToken = default)
-            {
-                HandleCallCount++;
-                return Task.FromResult(new SampleModelReply($"Hello {messageContext.Model.Name} {messageContext.Model.Surname}!"));
-            }
-
-            public Task Handle(IMessageContext<SampleModelThatRaisesException> messageContext, CancellationToken cancellationToken = default)
-            {
-                throw new System.NotImplementedException();
-            }
-        }
-
-
         [TestMethod]
         public async Task SendAndReceiveMessage()
         {
@@ -141,14 +118,7 @@ namespace MessageBox.Tests
 
             await busClient.Publish(new SampleModel("John", "Smith"));
 
-            var reply = await busClient.SendAndGetReply<SampleModelReply>(new SampleModel("John", "Smith"));
-
-            await Task.Delay(2000);
-
-            Assert.AreEqual("Hello John Smith!", reply.NameAndSurname);
-
-            Assert.IsTrue((consumer1.HandleCallCount == 2 && consumer2.HandleCallCount == 1) || (consumer1.HandleCallCount == 1 && consumer2.HandleCallCount == 2));
-
+            WaitHandle.WaitAll(new[] { consumer1.HandleCalled, consumer2.HandleCalled });
         }
 
         [TestMethod]

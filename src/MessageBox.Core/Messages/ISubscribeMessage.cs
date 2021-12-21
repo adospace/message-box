@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MessageBox.Messages
 {
-    public interface ISubscribeToExchangeMessage : IControlMessage
+    public interface ISubscribeMessage : IControlMessage, ISerializableMessage
     {
         string ExchangeName { get; }
     }

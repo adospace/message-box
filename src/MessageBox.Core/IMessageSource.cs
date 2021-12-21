@@ -1,7 +1,9 @@
-﻿namespace MessageBox
+﻿using MessageBox.Messages;
+
+namespace MessageBox
 {
     public interface IMessageSource
     {
-        Task<Message> GetNextMessageToSend(CancellationToken cancellationToken = default);
+        Task<IMessage> GetNextMessageToSend(CancellationToken cancellationToken = default);
     }
 }

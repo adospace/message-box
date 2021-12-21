@@ -16,6 +16,16 @@ namespace MessageBox.Messages.Implementation
 
         public int Offset => _offset;
 
+        public void Write(byte value)
+        {
+            if (_memory != null)
+            {
+                MemoryMarshal.Write(_memory.Value.Slice(_offset, 1).Span, ref value);
+            }
+
+            _offset += 1;
+        }
+
         public void Write(int value)
         {
             if (_memory != null)
@@ -66,6 +76,24 @@ namespace MessageBox.Messages.Implementation
             }
 
             _offset++;
+        }
+
+        public void Write(string stringValue)
+        {
+            var sLen = Encoding.Default.GetByteCount(stringValue);
+            if (_memory != null)
+            {
+                MemoryMarshal.Write(_memory.Value.Slice(_offset, 4).Span, ref sLen);
+            }
+
+            _offset += 4;
+
+            if (_memory != null)
+            {
+                Encoding.Default.GetBytes(stringValue, _memory.Value.Slice(_offset, sLen).Span);
+            }
+
+            _offset += sLen;
         }
 
         public void WriteNullable(string? stringValue)

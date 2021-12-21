@@ -6,10 +6,8 @@ using System.Threading.Tasks;
 
 namespace MessageBox.Messages
 {
-    public interface ITransportMessage : IMessage, ISerializableMessage
+    public interface IQueuedMessage : IMessage
     {
-        Guid Id { get; }
-
-        Guid CorrelationId { get; }
+        Guid SourceQueueId { get; }
     }
 }

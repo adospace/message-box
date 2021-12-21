@@ -1,17 +1,17 @@
 ﻿using MessageBox.Tcp;
 using Microsoft.Extensions.DependencyInjection;
+using System.Buffers;
 using System.Net.Sockets;
 
 namespace MessageBox.Client.Implementation
 {
     internal class TcpClientTransport : TcpConnection, ITransport
     {
-        private readonly IServiceProvider _serviceProvider;
         private readonly TcpTransportOptions _options;
 
         public TcpClientTransport(IServiceProvider serviceProvider, TcpTransportOptions options)
+            :base(serviceProvider)
         {
-            _serviceProvider = serviceProvider;
             _options = options;
         }
 
@@ -35,10 +35,11 @@ namespace MessageBox.Client.Implementation
                     continue;
                 }
 
-                var messageSink = _serviceProvider.GetRequiredService<IMessageSink>();
-                var messageSource = _serviceProvider.GetRequiredService<IMessageSource>();
-
-                await RunConnectionLoop(tcpClient.Client, messageSink, messageSource, cancellationToken);
+                await RunConnectionLoop(
+                    connectedSocket: tcpClient.Client, 
+                    messageSource: _serviceProvider.GetRequiredService<IMessageSource>(),
+                    messageSink: _serviceProvider.GetRequiredService<IMessageSink>(),
+                    cancellationToken);
             }
         }
 

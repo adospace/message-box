@@ -1,4 +1,5 @@
-﻿using Nito.AsyncEx;
+﻿using MessageBox.Messages;
+using Nito.AsyncEx;
 using System.Collections.Concurrent;
 using System.Threading.Channels;
 
@@ -6,7 +7,7 @@ namespace MessageBox.Server.Implementation
 {
     internal class Exchange : IExchange
     {
-        private readonly Channel<Message> _outgoingMessages = Channel.CreateUnbounded<Message>();
+        private readonly Channel<IMessage> _outgoingMessages = Channel.CreateUnbounded<IMessage>();
 
         private readonly ConcurrentDictionary<Guid, WeakReference<IQueue>> _subscribers = new();
 
@@ -23,7 +24,7 @@ namespace MessageBox.Server.Implementation
 
         public string Key { get; }
 
-        public async Task OnReceivedMessage(Message message, CancellationToken cancellationToken)
+        public async Task OnReceivedMessage(IMessage message, CancellationToken cancellationToken)
         {
             await _outgoingMessages.Writer.WriteAsync(message, cancellationToken);
         }
@@ -50,13 +51,13 @@ namespace MessageBox.Server.Implementation
 
                 while (true)
                 {
-                    if (message.IsEvent)
+                    if (message is IPublishEventMessage publishEventMessage)
                     {
                         foreach (var subsriber in _subscribers.ToArray())
                         {
-                            if (subsriber.Value.TryGetTarget(out var box))
+                            if (subsriber.Value.TryGetTarget(out var queue))
                             {
-                                await box.OnReceivedMessage(message, _cancellationTokenSource.Token);
+                                await queue.OnReceivedMessage(message, _cancellationTokenSource.Token);
                             }
                             else
                             {
@@ -76,10 +77,10 @@ namespace MessageBox.Server.Implementation
                             if (!_subscribersQueue.TryDequeue(out var boxReference))
                                 break;
 
-                            if (!boxReference.TryGetTarget(out var box))
+                            if (!boxReference.TryGetTarget(out var queue))
                                 continue;
 
-                            await box.OnReceivedMessage(message, _cancellationTokenSource.Token);
+                            await queue.OnReceivedMessage(message, _cancellationTokenSource.Token);
 
                             _subscribersQueue.Enqueue(boxReference);
                             break;

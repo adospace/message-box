@@ -1,72 +1,84 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Buffers;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace MessageBox.Messages.Implementation
 {
     internal class MemoryByteBinaryReader
     {
+        private readonly Memory<byte> _memory;
         private int _offset;
-        public MemoryByteBinaryReader(Memory<byte> memory)
+        public MemoryByteBinaryReader(Memory<byte> memory, int offset = 0)
         {
-            Memory = memory;
+            _memory = memory;
+            _offset = offset;
         }
-
-        public Memory<byte> Memory { get; }
 
         public Guid ReadGuid()
         {
-            var guid = new Guid(Memory.Slice(_offset, 16).Span);
+            var guid = new Guid(_memory.Slice(_offset, 16).Span);
             _offset += 16;
             return guid;
         }
 
         public Guid? ReadNullableGuid()
         {
-            var isNull = Memory.Slice(_offset, 1).Span[0] == 0;
+            var isNull = _memory.Slice(_offset, 1).Span[0] == 0;
             _offset++;
             if (isNull)
             {
                 return null;
             }
 
-            var guid = new Guid(Memory.Slice(_offset, 16).Span);
+            var guid = new Guid(_memory.Slice(_offset, 16).Span);
             _offset += 16;
             return guid;
         }
 
         public bool ReadBoolean()
         {
-            var isTrue = Memory.Slice(_offset, 1).Span[0] == 1;
+            var isTrue = _memory.Slice(_offset, 1).Span[0] == 1;
             _offset++;
             return isTrue;
         }
 
+        public string ReadString()
+        {
+            var sLen = MemoryMarshal.Read<int>(_memory.Slice(_offset, 4).Span);
+            _offset += 4;
+
+            return ReadString(sLen);
+        }
+
+        public string ReadString(int sLen)
+        {
+            var s = Encoding.Default.GetString(_memory.Slice(_offset, sLen).Span);
+            _offset += sLen;
+
+            return s;
+        }
+
         public string? ReadNullableString()
         {
-            var isNull = Memory.Slice(_offset, 1).Span[0] == 0;
+            var isNull = _memory.Slice(_offset, 1).Span[0] == 0;
             _offset++;
             if (isNull)
             {
                 return null;
             }
 
-            var sLen = MemoryMarshal.Read<int>(Memory.Slice(_offset, 4).Span);
+            var sLen = MemoryMarshal.Read<int>(_memory.Slice(_offset, 4).Span);
             _offset += 4;
 
-            var s = Encoding.Default.GetString(Memory.Slice(_offset, sLen).Span);
+            var s = Encoding.Default.GetString(_memory.Slice(_offset, sLen).Span);
             _offset += sLen;
 
             return s;
         }
 
-        public ReadOnlyMemory<byte>? ReadRemainingBuffer(int messsageLen)
+        public ReadOnlyMemory<byte> ReadRemainingBuffer(int messsageLen)
         {
-            if (_offset < messsageLen)
-            {
-                return Memory[_offset..messsageLen];
-            }
-
-            return null;
+            return _memory[_offset..messsageLen];
         }
     }
 }

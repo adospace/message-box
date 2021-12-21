@@ -1,4 +1,5 @@
-﻿using MessageBox.Server;
+﻿using MessageBox.Messages;
+using MessageBox.Server;
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Concurrent;
 
@@ -35,17 +36,18 @@ namespace MessageBox.Testing.Implementation
 
         public ConnectionFromClient OnClientConnected(ClientTransport client)
         {
-            var boxId = Guid.NewGuid();
+            var queueId = Guid.NewGuid();
 
             var bus = _serviceProvider.GetRequiredService<IBusServer>();
             var messageSink = _serviceProvider.GetRequiredService<IMessageSink>();
+            var messageFactory = _serviceProvider.GetRequiredService<IMessageFactory>();
 
-            var box = bus.GetOrCreateQueue(boxId);
+            var queue = bus.GetOrCreateQueue(queueId);
 
-            _clients[boxId] = new ConnectionFromClient(messageSink, box, client);
-            _clients[boxId].Start();
+            _clients[queueId] = new ConnectionFromClient(messageFactory, messageSink, queue, client);
+            _clients[queueId].Start();
 
-            return _clients[boxId];
+            return _clients[queueId];
         }
 
     }

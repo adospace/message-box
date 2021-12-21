@@ -1,7 +1,10 @@
-﻿namespace MessageBox
+﻿using MessageBox.Messages;
+using System.Buffers;
+
+namespace MessageBox
 {
     public interface IMessageSink
     {
-        Task OnReceivedMessage(Message message, CancellationToken cancellationToken = default);
+        Task OnReceivedMessage(IMessage message, CancellationToken cancellationToken = default);
     }
 }

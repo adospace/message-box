@@ -6,14 +6,9 @@ using System.Threading.Tasks;
 
 namespace MessageBox.Messages
 {
-    public interface ICallMessage : ITransportMessage
+    public interface ICallMessage : ITransportMessage, IDisposable
     {
         string ExchangeName { get; }
-
-        /// <summary>
-        /// Indicates if a reply for the message is required
-        /// </summary>
-        bool RequireReply { get; }
 
         /// <summary>
         /// Type name of the object serialized in the Payload property
@@ -24,5 +19,6 @@ namespace MessageBox.Messages
         /// Optional payload data
         /// </summary>
         ReadOnlyMemory<byte> Payload { get; }
+
     }
 }

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MessageBox.Messages
 {
-    public interface IReplyWithPayloadMessage : IReplyMessage
+    public interface IReplyWithPayloadMessage : IReplyMessage, IDisposable
     {
         /// <summary>
         /// Type name of the object serialized in the Payload property

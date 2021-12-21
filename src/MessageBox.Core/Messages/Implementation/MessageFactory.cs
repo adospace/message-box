@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -9,27 +10,108 @@ namespace MessageBox.Messages.Implementation
 {
     internal class MessageFactory : IMessageFactory
     {
-        public ICallMessage CreateCallMessage(string exchangeName, bool requireReply, string payloadType, ReadOnlyMemory<byte> payload) 
-            => new CallMessage(exchangeName, requireReply, payloadType, payload);
+        public ICallMessage CreateCallMessage(string exchangeName, string payloadType, ReadOnlyMemory<byte> payload) 
+            => new CallMessage(exchangeName, payloadType, payload);
+
+        public ICallQueuedMessage CreateCallQueuedMessage(ICallMessage callMessage, Guid queueId)
+            => new CallQueuedMessage(callMessage, queueId);
 
         public IPublishEventMessage CreatePublishEventMessage(string exchangeName, string payloadType, ReadOnlyMemory<byte> payload) 
             => new PublishEventMessage(exchangeName, payloadType, payload);
 
-        public IReplyMessage CreateReplyMessage(ICallMessage message) 
+        public IReplyMessage CreateReplyMessage(ICallQueuedMessage message) 
             => new ReplyMessage(message);
 
-        public IReplyWithPayloadMessage CreateReplyWithPayloadMessage(ICallMessage message, string payloadType, ReadOnlyMemory<byte> payload) 
+        public IReplyWithPayloadMessage CreateReplyWithPayloadMessage(ICallQueuedMessage message, string payloadType, ReadOnlyMemory<byte> payload) 
             => new ReplyWithPayloadMessage(message, payloadType, payload);
 
         public ISetQueueNameMessage CreateSetQueueNameMessage(string queueName)
             => new SetQueueNameMessage(queueName);
 
-        public ISubscribeToExchangeMessage CreateSubsribeMessage(string exchangeName)
+        public ISubscribeMessage CreateSubsribeMessage(string exchangeName)
             => new SubsribeMessage(exchangeName);
+
+        public ISubscribeQueuedMessage CreateSubsribeQueuedMessage(ISubscribeMessage message, Guid queueId)
+            => new SubsribeQueuedMessage(message, queueId);
 
         public bool TryDeserialize(ref ReadOnlySequence<byte> buffer, out IMessage? message)
         {
-            throw new NotImplementedException();
+            message = null;
+            if (buffer.Length < 1)
+            {
+                return false;
+            }
+
+            var messageType = (MessageType)MemoryMarshal.Read<byte>(buffer.Slice(0, 1).ToArray());
+
+            switch (messageType)
+            {
+                case MessageType.CallMessage:
+                    CallMessage.TryDeserialize(ref buffer, out message);
+                    break;
+                case MessageType.CallQueuedMessage:
+                    CallQueuedMessage.TryDeserialize(ref buffer, out message);
+                    break;
+                case MessageType.PublishEventMessage:
+                    PublishEventMessage.TryDeserialize(ref buffer, out message);
+                    break;
+                case MessageType.ReplyMessage:
+                    ReplyMessage.TryDeserialize(ref buffer, out message);
+                    break;
+                case MessageType.ReplyWithPayloadMessage:
+                    ReplyWithPayloadMessage.TryDeserialize(ref buffer, out message);
+                    break;
+                case MessageType.SetQueueNameMessage:
+                    SetQueueNameMessage.TryDeserialize(ref buffer, out message);
+                    break;
+                case MessageType.SubsribeMessage:
+                    SubsribeMessage.TryDeserialize(ref buffer, out message);
+                    break;
+                default:
+                    throw new NotSupportedException();
+            }
+
+            return message != null;
+
+            //        message = null;
+
+            //        if (buffer.Length < 4)
+            //        {
+            //            return false;
+            //        }
+
+            //        var messageLength = MemoryMarshal.Read<int>(buffer.Slice(0, 4).ToArray());
+
+            //        if (buffer.Length < 4 + messageLength)
+            //        {
+            //            return false;
+            //        }
+
+            //        var memoryOwner = MemoryPool<byte>.Shared.Rent(messageLength);
+
+            //        buffer.Slice(4, messageLength).CopyTo(memoryOwner.Memory.Span);
+
+            //        var reader = new MemoryByteBinaryReader(memoryOwner.Memory);
+
+            //        message = new Message(
+            //            Id: reader.ReadGuid(),
+            //            ReplyToId: reader.ReadNullableGuid(),
+            //            RequireReply: reader.ReadBoolean(),
+            //            IsEvent: reader.ReadBoolean(),
+            //            IsAck: reader.ReadBoolean(),
+            //            BoardKey: reader.ReadNullableString(),
+            //            ReplyToBoxId: reader.ReadNullableGuid(),
+            //            CorrelationId: reader.ReadNullableGuid(),
+            //            PayloadType: reader.ReadNullableString(),
+            //            Payload: reader.ReadRemainingBuffer(messageLength),
+            //            MessageMemoryOwner: memoryOwner);
+
+            //        buffer = buffer.Slice(4 + messageLength);
+
+            //        return message != null;
         }
+
+
+
     }
 }

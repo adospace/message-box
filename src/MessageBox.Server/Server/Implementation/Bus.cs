@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using MessageBox.Messages;
+using System.Collections.Concurrent;
 
 namespace MessageBox.Server.Implementation
 {
@@ -50,32 +51,27 @@ namespace MessageBox.Server.Implementation
             }
         }
 
-        public async Task OnReceivedMessage(Message message, CancellationToken cancellationToken)
+        public async Task OnReceivedMessage(IMessage message, CancellationToken cancellationToken)
         {
-            if (message.BoardKey != null)
-            {
-                var board = GetOrCreateExchange(message.BoardKey);
-
-                if (message.Payload == null && message.PayloadType == null)
-                {
-                    if (message.ReplyToBoxId == null)
-                    {
-                        throw new InvalidOperationException();
-                    }
-
-                    board.Subscribe(GetOrCreateQueue(message.ReplyToBoxId.Value));
-                }
-                else
-                {
-                    await board.OnReceivedMessage(message, cancellationToken);
-                }
-
+            if (message is ISubscribeQueuedMessage subscribeToExchangeMessage)
+            { 
+                var exchange = GetOrCreateExchange(subscribeToExchangeMessage.ExchangeName);
+                exchange.Subscribe(GetOrCreateQueue(subscribeToExchangeMessage.SourceQueueId));
             }
-            else if (message.ReplyToBoxId != null)
+            else if (message is IPublishEventMessage publishEventMessage)
             {
-                var box = GetOrCreateQueue(message.ReplyToBoxId.Value);
-
-                await box.OnReceivedMessage(message, cancellationToken);
+                var exchange = GetOrCreateExchange(publishEventMessage.ExchangeName);
+                await exchange.OnReceivedMessage(message, cancellationToken);
+            }
+            else if (message is ICallMessage callMessage)
+            {
+                var exchange = GetOrCreateExchange(callMessage.ExchangeName);
+                await exchange.OnReceivedMessage(message, cancellationToken);
+            }
+            else if (message is IReplyMessage queuedMessage)
+            {
+                var queue = GetOrCreateQueue(queuedMessage.ReplyToBoxId);
+                await queue.OnReceivedMessage(message, cancellationToken);
             }
             else
             {

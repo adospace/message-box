@@ -1,33 +1,44 @@
-﻿namespace MessageBox.Testing.Implementation
+﻿using MessageBox.Messages;
+
+namespace MessageBox.Testing.Implementation
 {
     internal class ConnectionFromClient
     {
+        private readonly IMessageFactory _messageFactory;
         private readonly IMessageSink _bus;
+        private readonly IQueue _queue;
+        private readonly ClientTransport _client;
         private readonly CancellationTokenSource _cts = new();
 
-        public ConnectionFromClient(IMessageSink bus, IQueue queue, ClientTransport client)
+        public ConnectionFromClient(IMessageFactory messageFactory, IMessageSink bus, IQueue queue, ClientTransport client)
         {
+            _messageFactory = messageFactory;
             _bus = bus;
-            Queue = queue;
-            Client = client;
+            _queue = queue;
+            _client = client;
         }
 
-        public IQueue Queue { get; }
+        public Task OnReceivedMessage(IMessage message, CancellationToken cancellationToken = default)
+        {
+            if (message is ICallMessage callMessage)
+            {
+                return _bus.OnReceivedMessage(_messageFactory.CreateCallQueuedMessage(callMessage, _queue.Id), cancellationToken);
+            }
+            else if (message is ISubscribeMessage subscribeToExchangeMessage)
+            {
+                return _bus.OnReceivedMessage(_messageFactory.CreateSubsribeQueuedMessage(subscribeToExchangeMessage, _queue.Id), cancellationToken);
+            }
 
-        public ClientTransport Client { get; }
-
-        public async Task ReceiveMessageFromClient(Message message, CancellationToken cancellationToken = default)
-        { 
-            await _bus.OnReceivedMessage(message.ReplyToBoxId != null ? message : message with { ReplyToBoxId = Queue.Id }, cancellationToken);
+            return _bus.OnReceivedMessage(message, cancellationToken);
         }
 
         internal async void Start()
         {
             while (!_cts.IsCancellationRequested)
             {
-                var message = await Queue.GetNextMessageToSend(_cts.Token);
+                var message = await _queue.GetNextMessageToSend(_cts.Token);
 
-                await Client.OnReceiveMessageFromServer(message, _cts.Token);
+                await _client.OnReceiveMessageFromServer(message, _cts.Token);
             }
         }
 

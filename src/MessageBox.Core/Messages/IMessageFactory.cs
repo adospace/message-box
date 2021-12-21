@@ -9,15 +9,19 @@ namespace MessageBox.Messages
 {
     public interface IMessageFactory
     {
-        ISubscribeToExchangeMessage CreateSubsribeMessage(string exchangeName);
+        ISubscribeMessage CreateSubsribeMessage(string exchangeName);
+
+        ISubscribeQueuedMessage CreateSubsribeQueuedMessage(ISubscribeMessage message, Guid queueId);
 
         IPublishEventMessage CreatePublishEventMessage(string exchangeName, string payloadType, ReadOnlyMemory<byte> payload);
 
-        ICallMessage CreateCallMessage(string exchangeName, bool requireReply, string payloadType, ReadOnlyMemory<byte> payload);
+        ICallMessage CreateCallMessage(string exchangeName, string payloadType, ReadOnlyMemory<byte> payload);
 
-        IReplyMessage CreateReplyMessage(ICallMessage message);
+        ICallQueuedMessage CreateCallQueuedMessage(ICallMessage callMessage, Guid queueId);
 
-        IReplyWithPayloadMessage CreateReplyWithPayloadMessage(ICallMessage message, string payloadType, ReadOnlyMemory<byte> payload);
+        IReplyMessage CreateReplyMessage(ICallQueuedMessage message);
+
+        IReplyWithPayloadMessage CreateReplyWithPayloadMessage(ICallQueuedMessage message, string payloadType, ReadOnlyMemory<byte> payload);
 
         ISetQueueNameMessage CreateSetQueueNameMessage(string queueName);
 

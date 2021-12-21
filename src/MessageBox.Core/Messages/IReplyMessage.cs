@@ -9,5 +9,7 @@ namespace MessageBox.Messages
     public interface IReplyMessage : ITransportMessage
     {
         Guid ReplyToId { get; }
+
+        Guid ReplyToBoxId { get; }
     }
 }
