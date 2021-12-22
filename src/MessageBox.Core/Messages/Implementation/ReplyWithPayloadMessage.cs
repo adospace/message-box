@@ -6,7 +6,7 @@ namespace MessageBox.Messages.Implementation
     internal class ReplyWithPayloadMessage : ReplyMessage, IReplyWithPayloadMessage
     {
         private bool _disposedValue;
-        private readonly IMemoryOwner<byte> _memoryOwner;
+        private readonly IMemoryOwner<byte>? _memoryOwner;
 
         public ReplyWithPayloadMessage(ICallQueuedMessage message, string payloadType, ReadOnlyMemory<byte> payload)
             : base(message)
