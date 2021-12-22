@@ -52,12 +52,13 @@ namespace MessageBox.Tests
             var serializer = host.Services.GetRequiredService<IMessageSerializerFactory>().CreateMessageSerializer();
 
             var json = Encoding.UTF8.GetString(serializer.Serialize(new WeatherForecast()));
-
-            json.Should().Be(@"{
+            var expected = @"{
   ""Date"": ""12/31/2021"",
   ""TemperatureCelsius"": 12,
   ""Summary"": ""Hot""
-}");
+}".ReplaceLineEndings();
+
+            json.Should().Be(expected);
         }
     }
 }
