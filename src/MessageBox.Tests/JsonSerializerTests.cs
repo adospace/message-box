@@ -1,4 +1,5 @@
-﻿using MessageBox.Client;
+﻿using FluentAssertions;
+using MessageBox.Client;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -52,11 +53,11 @@ namespace MessageBox.Tests
 
             var json = Encoding.UTF8.GetString(serializer.Serialize(new WeatherForecast()));
 
-            Assert.AreEqual(@"{
+            json.Should().Be(@"{
   ""Date"": ""12/31/2021"",
   ""TemperatureCelsius"": 12,
   ""Summary"": ""Hot""
-}", json);
+}");
         }
     }
 }

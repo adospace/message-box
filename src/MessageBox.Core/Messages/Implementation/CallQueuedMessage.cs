@@ -11,7 +11,7 @@ namespace MessageBox.Messages.Implementation
     internal class CallQueuedMessage : ICallQueuedMessage
     {
         private bool _disposedValue;
-        private IMemoryOwner<byte>? _memoryOwner;
+        private readonly IMemoryOwner<byte>? _memoryOwner;
 
         public CallQueuedMessage(ICallMessage callMessage, Guid sourceQueueId)
         {
