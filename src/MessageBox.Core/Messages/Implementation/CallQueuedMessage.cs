@@ -1,14 +1,9 @@
-﻿using System;
-using System.Buffers;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Buffers;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MessageBox.Messages.Implementation
 {
-    internal class CallQueuedMessage : ICallQueuedMessage
+    internal sealed class CallQueuedMessage : ICallQueuedMessage
     {
         private bool _disposedValue;
         private readonly IMemoryOwner<byte>? _memoryOwner;
@@ -18,16 +13,18 @@ namespace MessageBox.Messages.Implementation
             Id = callMessage.Id;
             CorrelationId = callMessage.CorrelationId;
             ExchangeName = callMessage.ExchangeName;
+            TimeToLiveSeconds = callMessage.TimeToLiveSeconds;
             SourceQueueId = sourceQueueId;
             PayloadType = callMessage.PayloadType;
             Payload = callMessage.Payload;
         }
 
-        public CallQueuedMessage(Guid id, Guid correlationId, string exchangeName, Guid sourceQueueId, string payloadType, ReadOnlyMemory<byte> payload, IMemoryOwner<byte> memoryOwner)
+        private CallQueuedMessage(Guid id, Guid correlationId, string exchangeName, int timeToLiveSeconds, Guid sourceQueueId, string payloadType, ReadOnlyMemory<byte> payload, IMemoryOwner<byte> memoryOwner)
         {
             Id = id;
             CorrelationId = correlationId;
             ExchangeName = exchangeName;
+            TimeToLiveSeconds = timeToLiveSeconds;
             SourceQueueId = sourceQueueId;
             PayloadType = payloadType;
             Payload = payload;
@@ -39,8 +36,6 @@ namespace MessageBox.Messages.Implementation
 
         public string ExchangeName { get; }
 
-        public bool RequireReply { get; }
-
         public string PayloadType { get; }
 
         public ReadOnlyMemory<byte> Payload { get; }
@@ -49,13 +44,16 @@ namespace MessageBox.Messages.Implementation
         public Guid Id { get; }
 
         public Guid CorrelationId { get; }
+        
+        public int TimeToLiveSeconds { get; }
 
-        public virtual void Serialize(IBufferWriter<byte> writer)
+        public void Serialize(IBufferWriter<byte> writer)
         {
             var binaryWriterEstimator = new MemoryByteBinaryWriter();
             binaryWriterEstimator.Write(Id);
             binaryWriterEstimator.Write(CorrelationId);
             binaryWriterEstimator.Write(ExchangeName);
+            binaryWriterEstimator.Write(TimeToLiveSeconds);
             binaryWriterEstimator.Write(SourceQueueId);
             binaryWriterEstimator.Write(PayloadType);
             binaryWriterEstimator.WriteRemainingBuffer(Payload);
@@ -69,6 +67,7 @@ namespace MessageBox.Messages.Implementation
             binaryWriter.Write(Id);
             binaryWriter.Write(CorrelationId);
             binaryWriter.Write(ExchangeName);
+            binaryWriter.Write(TimeToLiveSeconds);
             binaryWriter.Write(SourceQueueId);
             binaryWriter.Write(PayloadType);
             binaryWriter.WriteRemainingBuffer(Payload);
@@ -102,6 +101,7 @@ namespace MessageBox.Messages.Implementation
                 id: reader.ReadGuid(),
                 correlationId: reader.ReadGuid(),
                 exchangeName: reader.ReadString(),
+                timeToLiveSeconds: reader.ReadInt32(),
                 sourceQueueId: reader.ReadGuid(),
                 payloadType: reader.ReadString(),
                 payload: reader.ReadRemainingBuffer(messageLength),
@@ -111,33 +111,13 @@ namespace MessageBox.Messages.Implementation
         }
 
 
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!_disposedValue)
-            {
-                if (disposing)
-                {
-                    _memoryOwner?.Dispose();
-                }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override finalizer
-                // TODO: set large fields to null
-                _disposedValue = true;
-            }
-        }
-
-        // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
-        // ~CallQueuedMessage()
-        // {
-        //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-        //     Dispose(disposing: false);
-        // }
-
         public void Dispose()
         {
-            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
+            if (_disposedValue) return;
+            
+            _memoryOwner?.Dispose();
+
+            _disposedValue = true;
         }
     }
 }

@@ -41,6 +41,13 @@ namespace MessageBox.Messages.Implementation
             _offset++;
             return isTrue;
         }
+        
+        public int ReadInt32()
+        {
+            var intValue = MemoryMarshal.Read<int>(_memory.Slice(_offset, 4).Span);
+            _offset += 4;
+            return intValue;
+        }
 
         public string ReadString()
         {

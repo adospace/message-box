@@ -11,5 +11,7 @@ namespace MessageBox.Messages
         Guid Id { get; }
 
         Guid CorrelationId { get; }
+
+        int TimeToLiveSeconds { get; }
     }
 }

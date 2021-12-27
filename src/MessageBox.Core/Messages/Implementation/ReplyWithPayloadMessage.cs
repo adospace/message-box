@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace MessageBox.Messages.Implementation
 {
-    internal class ReplyWithPayloadMessage : ReplyMessage, IReplyWithPayloadMessage
+    internal sealed class ReplyWithPayloadMessage : ReplyMessage, IReplyWithPayloadMessage
     {
         private bool _disposedValue;
         private readonly IMemoryOwner<byte>? _memoryOwner;
@@ -15,8 +15,8 @@ namespace MessageBox.Messages.Implementation
             Payload = payload;
         }
 
-        protected ReplyWithPayloadMessage(Guid id, Guid correlationId, Guid replyToId, Guid replyToBoxId, string payloadType, ReadOnlyMemory<byte> payload, IMemoryOwner<byte> memoryOwner) 
-            : base(id, correlationId, replyToId, replyToBoxId)
+        private ReplyWithPayloadMessage(Guid id, Guid correlationId, Guid replyToId, Guid replyToBoxId, int timeToLiveSeconds, string payloadType, ReadOnlyMemory<byte> payload, IMemoryOwner<byte> memoryOwner) 
+            : base(id, correlationId, replyToId, replyToBoxId, timeToLiveSeconds)
         {
             PayloadType = payloadType;
             Payload = payload;
@@ -34,6 +34,7 @@ namespace MessageBox.Messages.Implementation
             binaryWriterEstimator.Write(CorrelationId);
             binaryWriterEstimator.Write(ReplyToId);
             binaryWriterEstimator.Write(ReplyToBoxId);
+            binaryWriterEstimator.Write(TimeToLiveSeconds);
             binaryWriterEstimator.Write(PayloadType);
             binaryWriterEstimator.WriteRemainingBuffer(Payload);
 
@@ -47,13 +48,14 @@ namespace MessageBox.Messages.Implementation
             binaryWriter.Write(CorrelationId);
             binaryWriter.Write(ReplyToId);
             binaryWriter.Write(ReplyToBoxId);
+            binaryWriter.Write(TimeToLiveSeconds);
             binaryWriter.Write(PayloadType);
             binaryWriter.WriteRemainingBuffer(Payload);
 
             writer.Advance(5 + messageLength);
         }
 
-        public static new void TryDeserialize(ref ReadOnlySequence<byte> buffer, out IMessage? message)
+        public new static void TryDeserialize(ref ReadOnlySequence<byte> buffer, out IMessage? message)
         {
             message = null;
 
@@ -80,6 +82,7 @@ namespace MessageBox.Messages.Implementation
                 correlationId: reader.ReadGuid(),
                 replyToId: reader.ReadGuid(),
                 replyToBoxId: reader.ReadGuid(),
+                timeToLiveSeconds: reader.ReadInt32(),
                 payloadType: reader.ReadString(),
                 payload: reader.ReadRemainingBuffer(messageLength),
                 memoryOwner: memoryOwner);
@@ -87,33 +90,13 @@ namespace MessageBox.Messages.Implementation
             buffer = buffer.Slice(5 + messageLength);
         }
 
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!_disposedValue)
-            {
-                if (disposing)
-                {
-                    _memoryOwner?.Dispose();
-                }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override finalizer
-                // TODO: set large fields to null
-                _disposedValue = true;
-            }
-        }
-
-        // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
-        // ~ReplyWithPayloadMessage()
-        // {
-        //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-        //     Dispose(disposing: false);
-        // }
-
         public void Dispose()
         {
-            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
+            if (_disposedValue) return;
+            
+            _memoryOwner?.Dispose();
+
+            _disposedValue = true;
         }
     }
 }

@@ -13,9 +13,9 @@ namespace MessageBox.Messages
 
         ISubscribeQueuedMessage CreateSubsribeQueuedMessage(ISubscribeMessage message, Guid queueId);
 
-        IPublishEventMessage CreatePublishEventMessage(string exchangeName, string payloadType, ReadOnlyMemory<byte> payload);
+        IPublishEventMessage CreatePublishEventMessage(string exchangeName, int timeToLiveSeconds, string payloadType, ReadOnlyMemory<byte> payload);
 
-        ICallMessage CreateCallMessage(string exchangeName, string payloadType, ReadOnlyMemory<byte> payload);
+        ICallMessage CreateCallMessage(string exchangeName, int timeToLiveSeconds, string payloadType, ReadOnlyMemory<byte> payload);
 
         ICallQueuedMessage CreateCallQueuedMessage(ICallMessage callMessage, Guid queueId);
 

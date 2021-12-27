@@ -55,15 +55,15 @@ namespace MessageBox.Server.Implementation
                     {
                         if (message is IPublishEventMessage publishEventMessage)
                         {
-                            foreach (var subsriber in _subscribers.ToArray())
+                            foreach (var (subscriberKey, queueReference) in _subscribers.ToArray())
                             {
-                                if (subsriber.Value.TryGetTarget(out var queue))
+                                if (queueReference.TryGetTarget(out var queue))
                                 {
                                     await queue.OnReceivedMessage(message, _cancellationTokenSource.Token);
                                 }
                                 else
                                 {
-                                    _subscribers.Remove(subsriber.Key, out var _);
+                                    _subscribers.Remove(subscriberKey, out var _);
                                 }
                             }
 

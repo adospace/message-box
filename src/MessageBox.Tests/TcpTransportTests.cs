@@ -118,7 +118,8 @@ namespace MessageBox.Tests
 
             await busClient.Publish(new SampleModel("John", "Smith"));
 
-            WaitHandle.WaitAll(new[] { consumer1.HandleCalled, consumer2.HandleCalled });
+            foreach (var ev in new WaitHandle[] { consumer1.HandleCalled, consumer2.HandleCalled })
+                ev.WaitOne();
         }
 
         [TestMethod]

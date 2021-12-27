@@ -10,14 +10,14 @@ namespace MessageBox.Messages.Implementation
 {
     internal class MessageFactory : IMessageFactory
     {
-        public ICallMessage CreateCallMessage(string exchangeName, string payloadType, ReadOnlyMemory<byte> payload) 
-            => new CallMessage(exchangeName, payloadType, payload);
+        public ICallMessage CreateCallMessage(string exchangeName, int timeToLiveSeconds, string payloadType, ReadOnlyMemory<byte> payload) 
+            => new CallMessage(exchangeName, timeToLiveSeconds, payloadType, payload);
 
         public ICallQueuedMessage CreateCallQueuedMessage(ICallMessage callMessage, Guid queueId)
             => new CallQueuedMessage(callMessage, queueId);
 
-        public IPublishEventMessage CreatePublishEventMessage(string exchangeName, string payloadType, ReadOnlyMemory<byte> payload) 
-            => new PublishEventMessage(exchangeName, payloadType, payload);
+        public IPublishEventMessage CreatePublishEventMessage(string exchangeName, int timeToLiveSeconds, string payloadType, ReadOnlyMemory<byte> payload) 
+            => new PublishEventMessage(exchangeName, timeToLiveSeconds, payloadType, payload);
 
         public IReplyMessage CreateReplyMessage(ICallQueuedMessage message) 
             => new ReplyMessage(message);

@@ -191,11 +191,9 @@ namespace MessageBox.Client.Implementation
                 return;
             }
 
-            object? returnValue;
-
             try
             {
-                returnValue = await actionToCallOnReceiver.Call(message, deserializedModel);
+                await actionToCallOnReceiver.Call(message, deserializedModel);
                 _logger.LogTrace("Called handler method {ActionToCallOnReceiver}", actionToCallOnReceiver);
             }
             catch (Exception ex)
@@ -239,7 +237,7 @@ namespace MessageBox.Client.Implementation
             return await _outgoingMessages.Reader.ReadAsync(cancellationToken);
         }
 
-        public async Task Publish<T>(T model, CancellationToken cancellationToken = default)
+        public async Task Publish<T>(T model, TimeSpan? timeout = null, CancellationToken cancellationToken = default)
         {
             var serializer = _messageSerializerFactory.CreateMessageSerializer();
             byte[] modelSerialized;
@@ -256,6 +254,7 @@ namespace MessageBox.Client.Implementation
 
             await Post(_messageFactory.CreatePublishEventMessage(
                 exchangeName: model.GetType().FullName ?? throw new InvalidOperationException(),
+                timeToLiveSeconds: (int)(timeout ?? _options.DefaultCallTimeout).TotalSeconds,
                 payloadType: typeof(T).AssemblyQualifiedName ?? throw new InvalidOperationException(),
                 payload: modelSerialized), cancellationToken);
         }
@@ -277,6 +276,7 @@ namespace MessageBox.Client.Implementation
             
             var message = _messageFactory.CreateCallMessage(
                 exchangeName: model.GetType().FullName ?? throw new InvalidOperationException(),
+                timeToLiveSeconds: (int)(timeout ?? _options.DefaultCallTimeout).TotalSeconds,
                 payloadType: typeof(T).AssemblyQualifiedName ?? throw new InvalidOperationException(),
                 payload: modelSerialized
             );
@@ -342,6 +342,7 @@ namespace MessageBox.Client.Implementation
 
             var message = _messageFactory.CreateCallMessage(
                 exchangeName: model.GetType().FullName ?? throw new InvalidOperationException(),
+                timeToLiveSeconds: (int)(timeout ?? _options.DefaultCallTimeout).TotalSeconds,
                 payloadType: model.GetType().AssemblyQualifiedName ?? throw new InvalidOperationException(),
                 payload: modelSerialized
             );

@@ -3,25 +3,27 @@ using System.Runtime.InteropServices;
 
 namespace MessageBox.Messages.Implementation
 {
-    internal class CallMessage : ICallMessage
+    internal sealed class CallMessage : ICallMessage
     {
         private readonly IMemoryOwner<byte>? _memoryOwner;
         private bool _disposedValue;
 
-        public CallMessage(string exchangeName, string payloadType, ReadOnlyMemory<byte> payload)
+        public CallMessage(string exchangeName, int timeToLiveSeconds, string payloadType, ReadOnlyMemory<byte> payload)
         {
             Id = Guid.NewGuid();
             CorrelationId = Guid.NewGuid();
             Payload = payload;
             PayloadType = payloadType;
             ExchangeName = exchangeName;
+            TimeToLiveSeconds = timeToLiveSeconds;
         }
 
-        private CallMessage(Guid id, Guid correlationId, string exchangeName, string payloadType, ReadOnlyMemory<byte> payload, IMemoryOwner<byte> memoryOwner) 
+        private CallMessage(Guid id, Guid correlationId, string exchangeName, int timeToLiveSeconds, string payloadType, ReadOnlyMemory<byte> payload, IMemoryOwner<byte> memoryOwner) 
         {
             Id = id;
             CorrelationId = correlationId;
             ExchangeName = exchangeName;
+            TimeToLiveSeconds = timeToLiveSeconds;
             PayloadType = payloadType;
             Payload = payload;
             _memoryOwner = memoryOwner;
@@ -34,15 +36,18 @@ namespace MessageBox.Messages.Implementation
         public Guid Id { get; }
 
         public Guid CorrelationId { get; }
+        
+        public int TimeToLiveSeconds { get; }
 
         public string ExchangeName { get; }
 
-        public virtual void Serialize(IBufferWriter<byte> writer)
+        public void Serialize(IBufferWriter<byte> writer)
         {
             var binaryWriterEstimator = new MemoryByteBinaryWriter();
             binaryWriterEstimator.Write(Id);
             binaryWriterEstimator.Write(CorrelationId);
             binaryWriterEstimator.Write(ExchangeName);
+            binaryWriterEstimator.Write(TimeToLiveSeconds);
             binaryWriterEstimator.Write(PayloadType);
             binaryWriterEstimator.WriteRemainingBuffer(Payload);
 
@@ -55,6 +60,7 @@ namespace MessageBox.Messages.Implementation
             binaryWriter.Write(Id);
             binaryWriter.Write(CorrelationId);
             binaryWriter.Write(ExchangeName);
+            binaryWriter.Write(TimeToLiveSeconds);
             binaryWriter.Write(PayloadType);
             binaryWriter.WriteRemainingBuffer(Payload);
 
@@ -86,6 +92,7 @@ namespace MessageBox.Messages.Implementation
                 id: reader.ReadGuid(),
                 correlationId: reader.ReadGuid(),
                 exchangeName: reader.ReadString(),
+                timeToLiveSeconds: reader.ReadInt32(),
                 payloadType: reader.ReadString(),
                 payload: reader.ReadRemainingBuffer(messageLength),
                 memoryOwner: memoryOwner);
@@ -95,33 +102,13 @@ namespace MessageBox.Messages.Implementation
         }
 
 
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!_disposedValue)
-            {
-                if (disposing)
-                {
-                    _memoryOwner?.Dispose();
-                }
-
-                // TODO: free unmanaged resources (unmanaged objects) and override finalizer
-                // TODO: set large fields to null
-                _disposedValue = true;
-            }
-        }
-
-        // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
-        // ~CallMessage()
-        // {
-        //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-        //     Dispose(disposing: false);
-        // }
-
         public void Dispose()
         {
-            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
+            if (_disposedValue) return;
+            
+            _memoryOwner?.Dispose();
+
+            _disposedValue = true;
         }
     }
 }

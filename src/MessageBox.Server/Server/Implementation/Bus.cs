@@ -5,9 +5,9 @@ namespace MessageBox.Server.Implementation
 {
     internal class Bus : IBus, IMessageSink, IBusServer
     {
-        private readonly ConcurrentDictionary<string, IExchange> _boards = new(StringComparer.InvariantCultureIgnoreCase);
+        private readonly ConcurrentDictionary<string, IExchange> _exchanges = new(StringComparer.InvariantCultureIgnoreCase);
 
-        private readonly ConcurrentDictionary<Guid, IQueue> _boxes = new();
+        private readonly ConcurrentDictionary<Guid, IQueue> _queues = new();
 
         private readonly ITransport _transport;
 
@@ -23,7 +23,7 @@ namespace MessageBox.Server.Implementation
                 throw new ArgumentException($"'{nameof(key)}' cannot be null or whitespace.", nameof(key));
             }
 
-            return _boards.GetOrAdd(key, _ =>
+            return _exchanges.GetOrAdd(key, _ =>
             {
                 var board = new Exchange(_);
                 board.Start();
@@ -33,7 +33,7 @@ namespace MessageBox.Server.Implementation
 
         public IQueue GetOrCreateQueue(Guid id)
         {
-            return _boxes.GetOrAdd(id, _ => new Queue(_));
+            return _queues.GetOrAdd(id, _ => new Queue(_));
         }
 
         public async Task Run(CancellationToken cancellationToken)
@@ -45,7 +45,7 @@ namespace MessageBox.Server.Implementation
         {
             await _transport.Stop(cancellationToken);
 
-            foreach (var board in _boards.ToArray())
+            foreach (var board in _exchanges.ToArray())
             {
                 board.Value.Stop();
             }
@@ -53,29 +53,37 @@ namespace MessageBox.Server.Implementation
 
         public async Task OnReceivedMessage(IMessage message, CancellationToken cancellationToken)
         {
-            if (message is ISubscribeQueuedMessage subscribeToExchangeMessage)
-            { 
-                var exchange = GetOrCreateExchange(subscribeToExchangeMessage.ExchangeName);
-                exchange.Subscribe(GetOrCreateQueue(subscribeToExchangeMessage.SourceQueueId));
-            }
-            else if (message is IPublishEventMessage publishEventMessage)
+            switch (message)
             {
-                var exchange = GetOrCreateExchange(publishEventMessage.ExchangeName);
-                await exchange.OnReceivedMessage(message, cancellationToken);
-            }
-            else if (message is ICallMessage callMessage)
-            {
-                var exchange = GetOrCreateExchange(callMessage.ExchangeName);
-                await exchange.OnReceivedMessage(message, cancellationToken);
-            }
-            else if (message is IReplyMessage queuedMessage)
-            {
-                var queue = GetOrCreateQueue(queuedMessage.ReplyToBoxId);
-                await queue.OnReceivedMessage(message, cancellationToken);
-            }
-            else
-            {
-                throw new InvalidOperationException();
+                case ISubscribeQueuedMessage subscribeToExchangeMessage:
+                {
+                    var exchange = GetOrCreateExchange(subscribeToExchangeMessage.ExchangeName);
+                    exchange.Subscribe(GetOrCreateQueue(subscribeToExchangeMessage.SourceQueueId));
+                    break;
+                }
+                case IPublishEventMessage publishEventMessage:
+                {
+                    var exchange = GetOrCreateExchange(publishEventMessage.ExchangeName);
+                    await exchange.OnReceivedMessage(message, cancellationToken);
+                    break;
+                }
+                case ICallMessage callMessage:
+                {
+                    var exchange = GetOrCreateExchange(callMessage.ExchangeName);
+                    await exchange.OnReceivedMessage(message, cancellationToken);
+                    break;
+                }
+                case IReplyMessage queuedMessage:
+                {
+                    _queues.TryGetValue(queuedMessage.ReplyToBoxId, out var queue);
+                    if (queue != null)
+                    {
+                        await queue.OnReceivedMessage(message, cancellationToken);
+                    }
+                    break;
+                }
+                default:
+                    throw new InvalidOperationException();
             }
         }
     }
