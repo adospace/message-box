@@ -4,7 +4,7 @@ public interface IExchangeControl
 {
     string Key { get; }
 
-    int GetMessageCount();
+    int GetTotalMessageCount();
 
     IReadOnlyList<IQueueControl> GetSubscribers();
 

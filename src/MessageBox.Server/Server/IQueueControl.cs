@@ -6,7 +6,7 @@ public interface IQueueControl
 
     string? Name { get; }
 
-    int GetMessageCount();
+    int GetTotalMessageCount();
 
     Task<bool> IsAlive(TimeSpan keepAliveTimeout, CancellationToken cancellationToken = default);
 }

@@ -45,6 +45,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Benckmark", "Benckmark", "{
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessageBox.Benchmark", "..\samples\benchmark\MessageBox.Benchmark\MessageBox.Benchmark.csproj", "{CA67D233-E5FF-488D-937B-901603707BE3}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AdminDemoClient", "AdminDemoClient", "{5113A2B9-50D6-4CC3-BC4F-3421ADEFBA40}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdminDemoClient", "..\samples\admin-demo-client\AdminDemoClient\AdminDemoClient.csproj", "{9A198D2E-1AF5-4F8E-844B-32A2DFE89D05}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -119,6 +123,10 @@ Global
 		{CA67D233-E5FF-488D-937B-901603707BE3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CA67D233-E5FF-488D-937B-901603707BE3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CA67D233-E5FF-488D-937B-901603707BE3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9A198D2E-1AF5-4F8E-844B-32A2DFE89D05}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9A198D2E-1AF5-4F8E-844B-32A2DFE89D05}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9A198D2E-1AF5-4F8E-844B-32A2DFE89D05}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9A198D2E-1AF5-4F8E-844B-32A2DFE89D05}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -134,6 +142,8 @@ Global
 		{37398116-8CCC-4A61-9C1E-759E95D5BB64} = {B5AFCE86-53F4-47F7-8CF2-31E93316604B}
 		{0B253C46-E363-4D9B-8991-58E05BB353E2} = {42C36A73-B454-48F2-9A0E-EE18342BB5EA}
 		{CA67D233-E5FF-488D-937B-901603707BE3} = {0B253C46-E363-4D9B-8991-58E05BB353E2}
+		{5113A2B9-50D6-4CC3-BC4F-3421ADEFBA40} = {42C36A73-B454-48F2-9A0E-EE18342BB5EA}
+		{9A198D2E-1AF5-4F8E-844B-32A2DFE89D05} = {5113A2B9-50D6-4CC3-BC4F-3421ADEFBA40}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {0A2D4BA8-F6F8-4F02-9633-B9839F69CEC9}

@@ -6,6 +6,7 @@ namespace MessageBox.Server.Implementation
     internal class Queue : IQueue, IQueueControl
     {
         private readonly IMessageFactory _messageFactory;
+        private int _messageCount;
 
         private class MessageEntry
         {
@@ -44,9 +45,9 @@ namespace MessageBox.Server.Implementation
         
         public string? Name { get; private set; }
         
-        public int GetMessageCount()
+        public int GetTotalMessageCount()
         {
-            return _outgoingMessages.Reader.Count;
+            return _messageCount;
         }
 
         public async Task<bool> IsAlive(TimeSpan keepAliveTimeout, CancellationToken cancellationToken)
@@ -80,7 +81,8 @@ namespace MessageBox.Server.Implementation
             {
                 return;
             }
-            
+
+            _messageCount++;
             await _outgoingMessages.Writer.WriteAsync(messageEntry, cancellationToken);
         }
 

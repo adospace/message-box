@@ -19,6 +19,8 @@ namespace MessageBox.Server.Implementation
 
         private DateTime _lastReceivedMessageTimeStamp = DateTime.UtcNow;
 
+        private int _messageCount;
+
         public Exchange(string key)
         {
             Key = key;
@@ -54,10 +56,11 @@ namespace MessageBox.Server.Implementation
                     }
                     
                     _lastReceivedMessageTimeStamp = DateTime.UtcNow;
+                    _messageCount++;
 
                     while (true)
                     {
-                        if (message is IPublishEventMessage publishEventMessage)
+                        if (message is IPublishEventMessage)
                         {
                             foreach (var (subscriberKey, queueReference) in _subscribers.ToArray())
                             {
@@ -112,9 +115,9 @@ namespace MessageBox.Server.Implementation
             _cancellationTokenSource.Cancel();
         }
         
-        public int GetMessageCount()
+        public int GetTotalMessageCount()
         {
-            return _outgoingMessages.Reader.Count;
+            return _messageCount;
         }
 
         public IReadOnlyList<IQueueControl> GetSubscribers()
