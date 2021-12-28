@@ -3,7 +3,7 @@ using System.Threading.Channels;
 
 namespace MessageBox.Server.Implementation
 {
-    internal class Queue : IQueue
+    internal class Queue : IQueue, IQueueControl
     {
         private class MessageEntry
         {
@@ -28,9 +28,22 @@ namespace MessageBox.Server.Implementation
         }
 
         public Guid Id { get; }
+        
+        public string? Name { get; private set; }
+        
+        public int GetMessageCount()
+        {
+            return _outgoingMessages.Reader.Count;
+        }
 
         public async Task OnReceivedMessage(IMessage message, CancellationToken cancellationToken)
         {
+            if (message is ISetQueueNameMessage setQueueNameMessage)
+            {
+                Name = setQueueNameMessage.SetQueueName;
+                return;
+            }
+            
             var messageEntry = new MessageEntry((ITransportMessage)message);
             if (messageEntry.IsExpired)
             {

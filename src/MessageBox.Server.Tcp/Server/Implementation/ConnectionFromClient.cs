@@ -23,16 +23,21 @@ namespace MessageBox.Server.Implementation
 
             public Task OnReceivedMessage(IMessage message, CancellationToken cancellationToken = default)
             {
-                if (message is ICallMessage callMessage)
+                return message switch
                 {
-                    return _originalMessageSink.OnReceivedMessage(_messageFactory.CreateCallQueuedMessage(callMessage, _queue.Id), cancellationToken);
-                }
-                else if (message is ISubscribeMessage subscribeToExchangeMessage)
-                {
-                    return _originalMessageSink.OnReceivedMessage(_messageFactory.CreateSubsribeQueuedMessage(subscribeToExchangeMessage, _queue.Id), cancellationToken);
-                }
-
-                return _originalMessageSink.OnReceivedMessage(message, cancellationToken);
+                    ICallMessage callMessage 
+                        => _originalMessageSink.OnReceivedMessage(
+                        _messageFactory.CreateCallQueuedMessage(callMessage, _queue.Id), cancellationToken),
+                    ISubscribeMessage subscribeToExchangeMessage 
+                        => _originalMessageSink.OnReceivedMessage(
+                        _messageFactory.CreateSubsribeQueuedMessage(subscribeToExchangeMessage, _queue.Id),
+                        cancellationToken),
+                    ISetQueueNameMessage setQueueNameMessage
+                        => _originalMessageSink.OnReceivedMessage(
+                            _messageFactory.CreateSetQueueNameQueuedMessage(setQueueNameMessage.SetQueueName, _queue.Id),
+                            cancellationToken),
+                    _ => _originalMessageSink.OnReceivedMessage(message, cancellationToken)
+                };
             }
         }
 

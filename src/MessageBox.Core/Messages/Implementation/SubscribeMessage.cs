@@ -3,16 +3,16 @@ using System.Runtime.InteropServices;
 
 namespace MessageBox.Messages.Implementation
 {
-    internal class SubsribeMessage : ISubscribeMessage
+    internal sealed class SubscribeMessage : ISubscribeMessage
     {
-        public SubsribeMessage(string exchangeName)
+        public SubscribeMessage(string exchangeName)
         {
             ExchangeName = exchangeName;
         }
 
         public string ExchangeName { get; }
 
-        public virtual void Serialize(IBufferWriter<byte> writer)
+        public void Serialize(IBufferWriter<byte> writer)
         {
             var binaryWriterEstimator = new MemoryByteBinaryWriter();
             binaryWriterEstimator.Write(ExchangeName);
@@ -26,6 +26,7 @@ namespace MessageBox.Messages.Implementation
 
             writer.Advance(1 + messageLength);
         }
+        
         public static void TryDeserialize(ref ReadOnlySequence<byte> buffer, out IMessage? message)
         {
             message = null;
@@ -48,11 +49,10 @@ namespace MessageBox.Messages.Implementation
 
             var reader = new MemoryByteBinaryReader(memoryOwner.Memory);
 
-            message = new SubsribeMessage(
+            message = new SubscribeMessage(
                 exchangeName: reader.ReadString(messageLength));
 
             buffer = buffer.Slice(5 + messageLength);
         }
-
     }
 }

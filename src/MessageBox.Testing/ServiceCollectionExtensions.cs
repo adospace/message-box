@@ -29,9 +29,9 @@ namespace MessageBox.Testing
             return hostBuilder;
         }
 
-        public static IHostBuilder AddMessageBoxInMemoryClient(this IHostBuilder hostBuilder)
+        public static IHostBuilder AddMessageBoxInMemoryClient(this IHostBuilder hostBuilder, InMemoryBusClientOptions? options = null)
         {
-            hostBuilder.ConfigureServices((_, services) => services.AddMessageBoxInMemoryClient());
+            hostBuilder.ConfigureServices((_, services) => services.AddMessageBoxInMemoryClient(options));
             return hostBuilder;
         }
     }

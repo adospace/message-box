@@ -1,12 +1,10 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Nito.AsyncEx;
 using System.Collections.Concurrent;
-using System.Reflection;
 using System.Threading.Channels;
 using System.Threading.Tasks.Dataflow;
 using Microsoft.Extensions.Logging;
 using MessageBox.Messages;
-using System.Buffers;
 
 namespace MessageBox.Client.Implementation
 {
@@ -56,16 +54,6 @@ namespace MessageBox.Client.Implementation
 
         private async Task ProcessIncomingMessage(IMessage message)
         {
-            //using var scope = _logger.BeginScope(new Dictionary<string, object?>
-            //{
-            //    {"MessageId", message.Id},
-            //    {"ReplyToId", message.ReplyToId},
-            //    {"RequireReply", message.RequireReply},
-            //    {"PayloadType", message.PayloadType},
-            //    {"PayloadSize", message.Payload?.Length},
-            //    {"CorrelationId", message.CorrelationId},
-            //});
-
             switch (message)
             {
                 case IReplyMessage replyMessage:
@@ -80,18 +68,14 @@ namespace MessageBox.Client.Implementation
                 default:
                     throw new NotSupportedException();
             }
-
-
-            //message.MessageMemoryOwner?.Dispose();
         }
 
         private void ProcessIncomingMessage(IReplyMessage message)
-        { 
-            if (_waitingCalls.TryGetValue(message.ReplyToId, out var replyHandler))
-            {
-                replyHandler.ReplyMessage = message;
-                replyHandler.WaitReplyEvent.Set();
-            }
+        {
+            if (!_waitingCalls.TryGetValue(message.ReplyToId, out var replyHandler)) return;
+            
+            replyHandler.ReplyMessage = message;
+            replyHandler.WaitReplyEvent.Set();
         }
 
         private async Task ProcessIncomingMessage(ICallQueuedMessage message)
@@ -156,7 +140,7 @@ namespace MessageBox.Client.Implementation
             {
                 await Post(_messageFactory.CreateReplyWithPayloadMessage(
                     message: message,
-                    payloadType: returnValue?.GetType().AssemblyQualifiedName ?? throw new InvalidOperationException(),
+                    payloadType: returnValue.GetType().AssemblyQualifiedName ?? throw new InvalidOperationException(),
                     payload: replyPayload));
             }
             else
@@ -202,9 +186,13 @@ namespace MessageBox.Client.Implementation
             }
         }
 
-
         public async Task Run(CancellationToken cancellationToken)
         {
+            if (_options.Name != null)
+            {
+                await Post(_messageFactory.CreateSetQueueNameMessage(_options.Name), cancellationToken);
+            }
+
             foreach (var receiverCallback in _serviceProvider.GetServices<IMessageReceiverCallback>())
             {
                 _receiveActionForMessageType[receiverCallback.ModelType] = receiverCallback;

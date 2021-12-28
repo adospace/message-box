@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace MessageBox.Messages.Implementation
 {
-    internal class SetQueueNameMessage : ISetQueueNameMessage
+    internal class SetQueueNameMessage : ISetQueueNameMessage, ISerializableMessage
     {
         public SetQueueNameMessage(string queueName)
         {

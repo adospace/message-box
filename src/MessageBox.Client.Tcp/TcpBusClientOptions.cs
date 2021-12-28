@@ -20,6 +20,8 @@ namespace MessageBox
         {
         }
 
+        public string? Name { get; set; }
+
         public TimeSpan DefaultCallTimeout { get; set; } = TimeSpan.FromSeconds(60);
 
         public int MaxDegreeOfParallelism { get; set; } = 10;

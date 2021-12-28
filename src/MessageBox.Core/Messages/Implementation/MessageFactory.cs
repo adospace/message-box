@@ -27,12 +27,15 @@ namespace MessageBox.Messages.Implementation
 
         public ISetQueueNameMessage CreateSetQueueNameMessage(string queueName)
             => new SetQueueNameMessage(queueName);
+        
+        public ISetQueueNameQueuedMessage CreateSetQueueNameQueuedMessage(string queueName, Guid queueId)
+            => new SetQueueNameQueuedMessage(queueName, queueId);
 
         public ISubscribeMessage CreateSubsribeMessage(string exchangeName)
-            => new SubsribeMessage(exchangeName);
+            => new SubscribeMessage(exchangeName);
 
         public ISubscribeQueuedMessage CreateSubsribeQueuedMessage(ISubscribeMessage message, Guid queueId)
-            => new SubsribeQueuedMessage(message, queueId);
+            => new SubscribeQueuedMessage(message, queueId);
 
         public bool TryDeserialize(ref ReadOnlySequence<byte> buffer, out IMessage? message)
         {
@@ -65,7 +68,7 @@ namespace MessageBox.Messages.Implementation
                     SetQueueNameMessage.TryDeserialize(ref buffer, out message);
                     break;
                 case MessageType.SubsribeMessage:
-                    SubsribeMessage.TryDeserialize(ref buffer, out message);
+                    SubscribeMessage.TryDeserialize(ref buffer, out message);
                     break;
                 default:
                     throw new NotSupportedException();
@@ -110,8 +113,5 @@ namespace MessageBox.Messages.Implementation
 
             //        return message != null;
         }
-
-
-
     }
 }

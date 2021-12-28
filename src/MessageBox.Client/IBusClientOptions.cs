@@ -2,8 +2,10 @@
 {
     public interface IBusClientOptions
     {
-        TimeSpan DefaultCallTimeout { get; set; }
+        string? Name { get; }
 
-        int MaxDegreeOfParallelism { get; set; }
+        TimeSpan DefaultCallTimeout { get; }
+
+        int MaxDegreeOfParallelism { get; }
     }
 }

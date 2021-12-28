@@ -1,3 +1,4 @@
+using System.Linq;
 using MessageBox.Testing;
 using MessageBox.Tests.Helpers;
 using Microsoft.Extensions.DependencyInjection;
@@ -5,11 +6,13 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading;
 using System.Threading.Tasks;
+using FluentAssertions;
+using MessageBox.Server;
 
 namespace MessageBox.Tests
 {
     [TestClass]
-    public partial class TestingFrameworkTests
+    public class TestingFrameworkTests
     {
         [TestMethod]
         public async Task SendAndReceiveMessage()
@@ -75,7 +78,7 @@ namespace MessageBox.Tests
 
             Assert.AreEqual("Hello John Smith!", reply.NameAndSurname);
 
-            WaitHandle.WaitAny(new[] { consumer1.HandleCalled, consumer2.HandleCalled });
+            WaitHandle.WaitAny(new WaitHandle[] { consumer1.HandleCalled, consumer2.HandleCalled });
         }
 
         [TestMethod]
@@ -151,7 +154,7 @@ namespace MessageBox.Tests
             var busClient = clientHost.Services.GetRequiredService<IBusClient>();
             await busClient.Send(new SampleModel("John", "Smith"));
 
-            WaitHandle.WaitAny(new[] { consumer1.HandleCalled, consumer2.HandleCalled });
+            WaitHandle.WaitAny(new WaitHandle[] { consumer1.HandleCalled, consumer2.HandleCalled });
         }
 
         [TestMethod]
@@ -217,5 +220,29 @@ namespace MessageBox.Tests
             await Assert.ThrowsExceptionAsync<MessageBoxCallException>(() => busClient.Send(new SampleModelThatRaisesException()));
         }
 
+        [TestMethod]
+        public async Task SetQueueNameAndCheck()
+        {
+            using var serverHost = Host.CreateDefaultBuilder()
+                .AddMessageBoxInMemoryServer()
+                .Build();
+
+            using var clientHost = Host.CreateDefaultBuilder()
+                .AddMessageBoxInMemoryClient(new InMemoryBusClientOptions()
+                {
+                    Name = "queue_name"
+                })
+                .AddJsonSerializer()
+                .Build();
+
+            await serverHost.StartAsync();
+            await clientHost.StartAsync();
+
+            await Task.Delay(1000);
+            
+            var busServerControl = serverHost.Services.GetRequiredService<IBusServerControl>();
+            var queue = busServerControl.GetQueues().FirstOrDefault(_ => _.Name == "queue_name");
+            queue.Should().NotBeNull();
+        }
     }
 }

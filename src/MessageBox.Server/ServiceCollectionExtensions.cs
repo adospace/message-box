@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using MessageBox.Server;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace MessageBox
 {
@@ -10,6 +11,7 @@ namespace MessageBox
             serviceCollection.AddSingleton<IBus>(sp => sp.GetRequiredService<Server.Implementation.Bus>());
             serviceCollection.AddSingleton<IMessageSink>(sp => sp.GetRequiredService<Server.Implementation.Bus>());
             serviceCollection.AddSingleton<Server.IBusServer>(sp => sp.GetRequiredService<Server.Implementation.Bus>());
+            serviceCollection.AddSingleton<IBusServerControl>(sp => sp.GetRequiredService<Server.Implementation.Bus>());
 
             return serviceCollection;
         }

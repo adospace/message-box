@@ -2,9 +2,9 @@
 
 namespace MessageBox.Messages.Implementation
 {
-    internal class SubsribeQueuedMessage : ISubscribeQueuedMessage
+    internal class SubscribeQueuedMessage : ISubscribeQueuedMessage
     {
-        public SubsribeQueuedMessage(ISubscribeMessage message, Guid sourceQueueId)
+        public SubscribeQueuedMessage(ISubscribeMessage message, Guid sourceQueueId)
         {
             ExchangeName = message.ExchangeName;
             SourceQueueId = sourceQueueId;

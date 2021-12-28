@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 
 namespace MessageBox.Server.Implementation
 {
-    internal class Bus : IBus, IMessageSink, IBusServer
+    internal class Bus : IBus, IMessageSink, IBusServer, IBusServerControl
     {
         private readonly ConcurrentDictionary<string, IExchange> _exchanges = new(StringComparer.InvariantCultureIgnoreCase);
 
@@ -82,9 +82,28 @@ namespace MessageBox.Server.Implementation
                     }
                     break;
                 }
+                case ISetQueueNameQueuedMessage setQueueNameQueuedMessage:
+                {
+                    _queues.TryGetValue(setQueueNameQueuedMessage.QueueId, out var queue);
+                    if (queue != null)
+                    {
+                        await queue.OnReceivedMessage(message, cancellationToken);
+                    }
+                    break;
+                }
                 default:
                     throw new InvalidOperationException();
             }
+        }
+
+        public IReadOnlyList<IQueueControl> GetQueues()
+        {
+            return _queues.Values.Cast<IQueueControl>().ToList();
+        }
+
+        public IReadOnlyList<IExchangeControl> GetExchanges()
+        {
+            return _exchanges.Values.Cast<IExchangeControl>().ToList();
         }
     }
 }

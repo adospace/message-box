@@ -25,6 +25,8 @@ namespace MessageBox.Messages
 
         ISetQueueNameMessage CreateSetQueueNameMessage(string queueName);
 
+        ISetQueueNameQueuedMessage CreateSetQueueNameQueuedMessage(string queueName, Guid queueId);
+
         bool TryDeserialize(ref ReadOnlySequence<byte> buffer, out IMessage? message);
     }
 }

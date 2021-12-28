@@ -8,7 +8,7 @@ namespace MessageBox
     {
         public static IServiceCollection AddMessageBoxClient(this IServiceCollection serviceCollection, IBusClientOptions options)
         {
-            serviceCollection.AddSingleton<Bus>(sp => new Bus(sp, options));
+            serviceCollection.AddSingleton(sp => new Bus(sp, options));
             serviceCollection.AddSingleton<IBus>(sp => sp.GetRequiredService<Bus>());
             serviceCollection.AddSingleton<IMessageSink>(sp => sp.GetRequiredService<Bus>());
             serviceCollection.AddSingleton<IMessageSource>(sp => sp.GetRequiredService<Bus>());
@@ -17,8 +17,8 @@ namespace MessageBox
             return serviceCollection;
         }
 
-        private readonly static Type _messageContextType = typeof(MessageContext<>);
-        private readonly static Type _taskType = typeof(Task<>);
+        private static readonly Type MessageContextType = typeof(MessageContext<>);
+        private static readonly Type TaskType = typeof(Task<>);
 
         public static IServiceCollection AddConsumer<T>(this IServiceCollection serviceCollection, ServiceLifetime lifetime = ServiceLifetime.Scoped) where T : class
         {
@@ -32,7 +32,7 @@ namespace MessageBox
         {
             serviceCollection.Add(new ServiceDescriptor(typeof(T), instance));
 
-            AddHandlersOfConsumer<T>(serviceCollection, instance);
+            AddHandlersOfConsumer(serviceCollection, instance);
 
             return serviceCollection;
         }
@@ -46,12 +46,12 @@ namespace MessageBox
             {
                 var typeOfModel = handlerType.GenericTypeArguments[0];
 
-                var messageContextActualType = _messageContextType.MakeGenericType(new[] { typeOfModel });
+                var messageContextActualType = MessageContextType.MakeGenericType(new[] { typeOfModel });
                 var handleMethod = handlerType.GetMethod("Handle") ?? throw new InvalidOperationException();
                 if (handlerType.GenericTypeArguments.Length == 1)
                 {
                     serviceCollection.AddSingleton<IMessageReceiverCallback>(sp => new MessageReceiverCallbackWithoutReturnValue(
-                        typeOfModel, async (message, model, cancellationToken) =>
+                        typeOfModel, async (_, model, cancellationToken) =>
                     {
                         using var scope = sp.CreateScope();
                         var handler = instance ?? scope.ServiceProvider.GetRequiredService<T>();
@@ -62,11 +62,11 @@ namespace MessageBox
                 else
                 {
                     var typeOfReplyModel = handlerType.GenericTypeArguments[1];
-                    var returnTaskType = _taskType.MakeGenericType(new[] { typeOfReplyModel });
+                    var returnTaskType = TaskType.MakeGenericType(new[] { typeOfReplyModel });
                     var resultProperty = returnTaskType.GetProperty("Result") ?? throw new InvalidOperationException();
 
                     serviceCollection.AddSingleton<IMessageReceiverCallback>(sp => new MessageReceiverCallbackWithReturnValue(
-                        typeOfModel, async (message, model, cancellationToken) =>
+                        typeOfModel, async (_, model, cancellationToken) =>
                         {
                             using var scope = sp.CreateScope();
                             var handler = instance ?? scope.ServiceProvider.GetRequiredService<T>();
@@ -83,13 +83,13 @@ namespace MessageBox
 
         public static IHostBuilder AddConsumer<T>(this IHostBuilder hostBuilder, ServiceLifetime lifetime = ServiceLifetime.Scoped) where T : class
         {
-            hostBuilder.ConfigureServices((ctx, services) => services.AddConsumer<T>(lifetime));
+            hostBuilder.ConfigureServices((_, services) => services.AddConsumer<T>(lifetime));
 
             return hostBuilder;
         }
         public static IHostBuilder AddConsumer<T>(this IHostBuilder hostBuilder, T instance) where T : class
         {
-            hostBuilder.ConfigureServices((ctx, services) => services.AddConsumer<T>(instance));
+            hostBuilder.ConfigureServices((_, services) => services.AddConsumer(instance));
 
             return hostBuilder;
         }

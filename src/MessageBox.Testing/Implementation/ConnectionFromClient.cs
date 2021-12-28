@@ -20,16 +20,19 @@ namespace MessageBox.Testing.Implementation
 
         public Task OnReceivedMessage(IMessage message, CancellationToken cancellationToken = default)
         {
-            if (message is ICallMessage callMessage)
+            return message switch
             {
-                return _bus.OnReceivedMessage(_messageFactory.CreateCallQueuedMessage(callMessage, _queue.Id), cancellationToken);
-            }
-            else if (message is ISubscribeMessage subscribeToExchangeMessage)
-            {
-                return _bus.OnReceivedMessage(_messageFactory.CreateSubsribeQueuedMessage(subscribeToExchangeMessage, _queue.Id), cancellationToken);
-            }
-
-            return _bus.OnReceivedMessage(message, cancellationToken);
+                ICallMessage callMessage => _bus.OnReceivedMessage(
+                    _messageFactory.CreateCallQueuedMessage(callMessage, _queue.Id), cancellationToken),
+                ISubscribeMessage subscribeToExchangeMessage => _bus.OnReceivedMessage(
+                    _messageFactory.CreateSubsribeQueuedMessage(subscribeToExchangeMessage, _queue.Id),
+                    cancellationToken),
+                ISetQueueNameMessage setQueueNameMessage
+                    => _bus.OnReceivedMessage(
+                        _messageFactory.CreateSetQueueNameQueuedMessage(setQueueNameMessage.SetQueueName, _queue.Id),
+                        cancellationToken),
+                _ => _bus.OnReceivedMessage(message, cancellationToken)
+            };
         }
 
         internal async void Start()

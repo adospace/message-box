@@ -1,9 +1,12 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using FluentAssertions;
+using MessageBox.Server;
 using Microsoft.Extensions.Logging;
 using MessageBox.Tests.Helpers;
 
@@ -223,5 +226,30 @@ namespace MessageBox.Tests
             await Assert.ThrowsExceptionAsync<MessageBoxCallException>(() => busClient.Send(new SampleModelThatRaisesException()));
         }
 
+        
+        [TestMethod]
+        public async Task SetQueueNameAndCheck()
+        {
+            using var serverHost = Host.CreateDefaultBuilder()
+                .AddMessageBoxTcpServer(12006)
+                .Build();
+
+            using var clientHost = Host.CreateDefaultBuilder()
+                .AddMessageBoxTcpClient(new TcpBusClientOptions(IPAddress.Loopback, 12006)
+                {
+                    Name = "queue_name"
+                })
+                .AddJsonSerializer()
+                .Build();
+
+            await serverHost.StartAsync();
+            await clientHost.StartAsync();
+
+            await Task.Delay(1000);
+            
+            var busServerControl = serverHost.Services.GetRequiredService<IBusServerControl>();
+            var queue = busServerControl.GetQueues().FirstOrDefault(_ => _.Name == "queue_name");
+            queue.Should().NotBeNull();
+        }
     }
 }

@@ -5,7 +5,7 @@ using System.Threading.Channels;
 
 namespace MessageBox.Server.Implementation
 {
-    internal class Exchange : IExchange
+    internal class Exchange : IExchange, IExchangeControl
     {
         private readonly Channel<IMessage> _outgoingMessages = Channel.CreateUnbounded<IMessage>();
 
@@ -106,6 +106,23 @@ namespace MessageBox.Server.Implementation
         public void Stop()
         {
             _cancellationTokenSource.Cancel();
+        }
+        
+        public int GetMessageCount()
+        {
+            return _outgoingMessages.Reader.Count;
+        }
+
+        public IReadOnlyList<IQueueControl> GetSubscribers()
+        {
+            return _subscribers.ToList().Select(_ =>
+            {
+                _.Value.TryGetTarget(out var queue);
+                return queue;
+            })
+            .Where(_=>_ != null)
+            .Cast<IQueueControl>()
+            .ToList();
         }
     }
 }
