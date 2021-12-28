@@ -20,6 +20,8 @@ namespace MessageBox.Messages.Implementation
 
         SubsribeMessage = 6,
 
-        CallQueuedMessage = 7
+        CallQueuedMessage = 7,
+        
+        KeepAliveMessage = 8
     }
 }

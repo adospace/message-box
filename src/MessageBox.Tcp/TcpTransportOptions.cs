@@ -6,6 +6,10 @@ namespace MessageBox
     {
         public IPEndPoint ServerEndPoint { get; }
 
+        public int SocketReceiveTimeout { get; set; } = 10000;
+
+        public int SocketSendTimeout { get; set; } = 0;
+
         public TcpTransportOptions(int port)
         {
             ServerEndPoint = new IPEndPoint(IPAddress.Any, port);

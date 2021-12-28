@@ -5,25 +5,38 @@ namespace MessageBox.Server.Implementation
 {
     internal class Queue : IQueue, IQueueControl
     {
+        private readonly IMessageFactory _messageFactory;
+
         private class MessageEntry
         {
+            private readonly int _timeToLiveSeconds;
             private readonly DateTime _arrived;
+            
+            public MessageEntry(IMessage message, int timeToLiveSeconds)
+            {
+                _timeToLiveSeconds = timeToLiveSeconds;
+                Message = message;
+                _arrived = DateTime.UtcNow;
+            }
             
             public MessageEntry(ITransportMessage message)
             {
+                _timeToLiveSeconds = message.TimeToLiveSeconds;
                 Message = message;
                 _arrived = DateTime.UtcNow;
             }
 
-            public ITransportMessage Message { get; }
+            public IMessage Message { get; }
 
-            public bool IsExpired => (_arrived - DateTime.UtcNow).TotalSeconds > Message.TimeToLiveSeconds;
+            public bool IsExpired => (_arrived - DateTime.UtcNow).TotalSeconds > _timeToLiveSeconds;
         }
 
         private readonly Channel<MessageEntry> _outgoingMessages = Channel.CreateUnbounded<MessageEntry>();
+        private DateTime? _lastReceivedMessageTimeStamp;
 
-        public Queue(Guid id)
+        public Queue(Guid id, IMessageFactory messageFactory)
         {
+            _messageFactory = messageFactory;
             Id = id;
         }
 
@@ -36,19 +49,38 @@ namespace MessageBox.Server.Implementation
             return _outgoingMessages.Reader.Count;
         }
 
+        public async Task<bool> IsAlive(TimeSpan keepAliveTimeout, CancellationToken cancellationToken)
+        {
+            if ((DateTime.UtcNow - _lastReceivedMessageTimeStamp) > keepAliveTimeout)
+            {
+                return false;
+            }
+
+            await _outgoingMessages.Writer.WriteAsync(new MessageEntry(_messageFactory.CreateKeepAliveMessage(Id), int.MaxValue), cancellationToken);
+            
+            return true;
+        }
+
         public async Task OnReceivedMessage(IMessage message, CancellationToken cancellationToken)
         {
-            if (message is ISetQueueNameMessage setQueueNameMessage)
-            {
-                Name = setQueueNameMessage.SetQueueName;
-                return;
-            }
+            _lastReceivedMessageTimeStamp = DateTime.UtcNow;
             
-            var messageEntry = new MessageEntry((ITransportMessage)message);
+            switch (message)
+            {
+                case ISetQueueNameMessage setQueueNameMessage:
+                    Name = setQueueNameMessage.SetQueueName;
+                    return;
+                case IKeepAliveMessage:
+                    return;
+            }
+
+            var transportMessage = (ITransportMessage)message;
+            var messageEntry = new MessageEntry(transportMessage);
             if (messageEntry.IsExpired)
             {
                 return;
             }
+            
             await _outgoingMessages.Writer.WriteAsync(messageEntry, cancellationToken);
         }
 

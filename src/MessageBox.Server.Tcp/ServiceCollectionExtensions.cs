@@ -6,7 +6,7 @@ namespace MessageBox
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddMessageBoxTcpServer(this IServiceCollection serviceCollection, TcpTransportOptions options)
+        public static IServiceCollection AddMessageBoxTcpServer(this IServiceCollection serviceCollection, ServerTcpTransportOptions options)
         {
             serviceCollection.AddMessageBoxServer();
             serviceCollection.AddSingleton<ITransportFactory>(sp => new Server.Implementation.ServerTransportFactory(sp, options));
@@ -17,15 +17,15 @@ namespace MessageBox
 
         public static IServiceCollection AddMessageBoxTcpServer(this IServiceCollection serviceCollection, int port)
         {
-            return AddMessageBoxTcpServer(serviceCollection, new TcpTransportOptions(port));
+            return AddMessageBoxTcpServer(serviceCollection, new ServerTcpTransportOptions(port));
         }
 
         public static IServiceCollection AddMessageBoxTcpServer(this IServiceCollection serviceCollection, string ipString, int port)
         {
-            return AddMessageBoxTcpServer(serviceCollection, new TcpTransportOptions(ipString, port));
+            return AddMessageBoxTcpServer(serviceCollection, new ServerTcpTransportOptions(ipString, port));
         }
 
-        public static IHostBuilder AddMessageBoxTcpServer(this IHostBuilder hostBuilder, TcpTransportOptions options)
+        public static IHostBuilder AddMessageBoxTcpServer(this IHostBuilder hostBuilder, ServerTcpTransportOptions options)
         {
             hostBuilder.ConfigureServices((_, services) => services.AddMessageBoxTcpServer(options));
             return hostBuilder;
@@ -33,13 +33,13 @@ namespace MessageBox
 
         public static IHostBuilder AddMessageBoxTcpServer(this IHostBuilder hostBuilder, int port)
         {
-            hostBuilder.ConfigureServices((_, services) => services.AddMessageBoxTcpServer(new TcpTransportOptions(port)));
+            hostBuilder.ConfigureServices((_, services) => services.AddMessageBoxTcpServer(new ServerTcpTransportOptions(port)));
             return hostBuilder;
         }
         
         public static IHostBuilder AddMessageBoxTcpServer(this IHostBuilder hostBuilder, string ipString, int port)
         {
-            hostBuilder.ConfigureServices((_, services) => services.AddMessageBoxTcpServer(new TcpTransportOptions(ipString, port)));
+            hostBuilder.ConfigureServices((_, services) => services.AddMessageBoxTcpServer(new ServerTcpTransportOptions(ipString, port)));
             return hostBuilder;
         }
     }

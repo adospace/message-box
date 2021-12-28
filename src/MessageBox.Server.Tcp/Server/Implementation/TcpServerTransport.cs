@@ -80,6 +80,9 @@ namespace MessageBox.Server.Implementation
 
                     _logger.LogInformation("Connection accepted from {RemoteEndPointIp}, begin connection loop", socketConnectedToClient.RemoteEndPoint?.ToString());
 
+                    socketConnectedToClient.ReceiveTimeout = _options.SocketReceiveTimeout;
+                    socketConnectedToClient.SendTimeout = _options.SocketSendTimeout;
+
                     var queueId = Guid.NewGuid();
 
                     var bus = _serviceProvider.GetRequiredService<IBusServer>();
@@ -93,7 +96,7 @@ namespace MessageBox.Server.Implementation
                 }
             }
 
-            tcpListener?.Stop();
+            tcpListener.Stop();
         }
 
     }

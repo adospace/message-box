@@ -5,14 +5,16 @@ namespace MessageBox.Server.Implementation
 {
     internal class Bus : IBus, IMessageSink, IBusServer, IBusServerControl
     {
+        private readonly IMessageFactory _messageFactory;
         private readonly ConcurrentDictionary<string, IExchange> _exchanges = new(StringComparer.InvariantCultureIgnoreCase);
 
         private readonly ConcurrentDictionary<Guid, IQueue> _queues = new();
 
         private readonly ITransport _transport;
 
-        public Bus(ITransportFactory transportFactory)
+        public Bus(ITransportFactory transportFactory, IMessageFactory messageFactory)
         {
+            _messageFactory = messageFactory;
             _transport = transportFactory.Create();
         }
 
@@ -33,7 +35,7 @@ namespace MessageBox.Server.Implementation
 
         public IQueue GetOrCreateQueue(Guid id)
         {
-            return _queues.GetOrAdd(id, _ => new Queue(_));
+            return _queues.GetOrAdd(id, _ => new Queue(_, _messageFactory));
         }
 
         public async Task Run(CancellationToken cancellationToken)
@@ -91,6 +93,15 @@ namespace MessageBox.Server.Implementation
                     }
                     break;
                 }
+                case IKeepAliveMessage keepAliveMessage:
+                {
+                    _queues.TryGetValue(keepAliveMessage.QueueId, out var queue);
+                    if (queue != null)
+                    {
+                        await queue.OnReceivedMessage(message, cancellationToken);
+                    }
+                    break;
+                }
                 default:
                     throw new InvalidOperationException();
             }
@@ -104,6 +115,16 @@ namespace MessageBox.Server.Implementation
         public IReadOnlyList<IExchangeControl> GetExchanges()
         {
             return _exchanges.Values.Cast<IExchangeControl>().ToList();
+        }
+
+        public void DeleteQueue(Guid id)
+        {
+            _queues.Remove(id, out _);
+        }
+
+        public void DeleteExchange(string name)
+        {
+            _exchanges.Remove(name, out _);
         }
     }
 }

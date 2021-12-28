@@ -18,7 +18,7 @@ namespace MessageBox.Messages.Implementation
             Payload = payload;
         }
 
-        public PublishEventMessage(Guid id, Guid correlationId, string exchangeName, int timeToLiveSeconds, string payloadType, ReadOnlyMemory<byte> payload, IMemoryOwner<byte> memoryOwner)
+        private PublishEventMessage(Guid id, Guid correlationId, string exchangeName, int timeToLiveSeconds, string payloadType, ReadOnlyMemory<byte> payload, IMemoryOwner<byte> memoryOwner)
         {
             Id = id;
             CorrelationId = correlationId;

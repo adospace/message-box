@@ -17,6 +17,8 @@ namespace MessageBox.Server.Implementation
 
         private readonly AsyncAutoResetEvent _subscribersListIsEmptyEvent = new();
 
+        private DateTime _lastReceivedMessageTimeStamp = DateTime.UtcNow;
+
         public Exchange(string key)
         {
             Key = key;
@@ -50,6 +52,8 @@ namespace MessageBox.Server.Implementation
                     {
                         break;
                     }
+                    
+                    _lastReceivedMessageTimeStamp = DateTime.UtcNow;
 
                     while (true)
                     {
@@ -123,6 +127,16 @@ namespace MessageBox.Server.Implementation
             .Where(_=>_ != null)
             .Cast<IQueueControl>()
             .ToList();
+        }
+
+        public bool IsAlive(TimeSpan keepAliveTimeout)
+        {
+            if (_outgoingMessages.Reader.Count > 0)
+            {
+                return true;
+            }
+
+            return (DateTime.UtcNow - _lastReceivedMessageTimeStamp) <= keepAliveTimeout;
         }
     }
 }

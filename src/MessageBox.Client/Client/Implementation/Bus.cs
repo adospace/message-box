@@ -34,7 +34,7 @@ namespace MessageBox.Client.Implementation
         private readonly ConcurrentDictionary<Guid, RpcCall> _waitingCalls = new();
         private readonly ConcurrentDictionary<Type, IMessageReceiverCallback> _receiveActionForMessageType = new();
 
-        private readonly ActionBlock<IMessage> _innomingMessages;
+        private readonly ActionBlock<IMessage> _incomingMessages;
 
         public Bus(
             IServiceProvider serviceProvider,
@@ -46,7 +46,7 @@ namespace MessageBox.Client.Implementation
             _messageFactory = serviceProvider.GetRequiredService<IMessageFactory>();
             _serviceProvider = serviceProvider;
             _options = options;
-            _innomingMessages = new ActionBlock<IMessage>(ProcessIncomingMessage, new ExecutionDataflowBlockOptions
+            _incomingMessages = new ActionBlock<IMessage>(ProcessIncomingMessage, new ExecutionDataflowBlockOptions
             { 
                 MaxDegreeOfParallelism = options.MaxDegreeOfParallelism
             });
@@ -212,7 +212,13 @@ namespace MessageBox.Client.Implementation
 
         public async Task OnReceivedMessage(IMessage message, CancellationToken cancellationToken = default)
         {
-            await _innomingMessages.SendAsync(message, cancellationToken);
+            if (message is IKeepAliveMessage keepAliveMessage)
+            {
+                await Post(keepAliveMessage, cancellationToken);
+                return;
+            }
+
+            await _incomingMessages.SendAsync(message, cancellationToken);
         }
 
         private async Task Post(IMessage message, CancellationToken cancellationToken = default)

@@ -36,6 +36,9 @@ namespace MessageBox.Messages.Implementation
 
         public ISubscribeQueuedMessage CreateSubsribeQueuedMessage(ISubscribeMessage message, Guid queueId)
             => new SubscribeQueuedMessage(message, queueId);
+        
+        public IKeepAliveMessage CreateKeepAliveMessage(Guid queueId) 
+            => new KeepAliveMessage(queueId);
 
         public bool TryDeserialize(ref ReadOnlySequence<byte> buffer, out IMessage? message)
         {
@@ -69,6 +72,9 @@ namespace MessageBox.Messages.Implementation
                     break;
                 case MessageType.SubsribeMessage:
                     SubscribeMessage.TryDeserialize(ref buffer, out message);
+                    break;
+                case MessageType.KeepAliveMessage:
+                    KeepAliveMessage.TryDeserialize(ref buffer, out message);
                     break;
                 default:
                     throw new NotSupportedException();
