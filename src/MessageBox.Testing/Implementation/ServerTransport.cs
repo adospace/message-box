@@ -17,7 +17,7 @@ namespace MessageBox.Testing.Implementation
             Instance = this;
         }
 
-        public Task Run(CancellationToken cancellationToken)
+        public Task Run(Func<CancellationToken, Task>? onConnectionSucceed, Func<CancellationToken, Task>? onConnectionEnded, CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
         }
@@ -42,7 +42,7 @@ namespace MessageBox.Testing.Implementation
             var messageSink = _serviceProvider.GetRequiredService<IMessageSink>();
             var messageFactory = _serviceProvider.GetRequiredService<IMessageFactory>();
 
-            var queue = bus.GetOrCreateQueue(queueId);
+            var queue = bus.CreateQueue(queueId, queueId.ToString());
 
             _clients[queueId] = new ConnectionFromClient(messageFactory, messageSink, queue, client);
             _clients[queueId].Start();

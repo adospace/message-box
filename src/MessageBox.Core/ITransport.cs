@@ -2,7 +2,7 @@
 {
     public interface ITransport
     {
-        Task Run(CancellationToken cancellationToken = default);
+        Task Run(Func<CancellationToken, Task>? onConnectionSucceed = null, Func<CancellationToken, Task>? onConnectionEnded = null, CancellationToken cancellationToken = default);
 
         Task Stop(CancellationToken cancellationToken = default);
     }

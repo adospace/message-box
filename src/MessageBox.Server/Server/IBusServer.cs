@@ -2,7 +2,9 @@
 {
     public interface IBusServer
     {
-        IQueue GetOrCreateQueue(Guid id);
+        IQueue? GetQueue(Guid id);
+        
+        IQueue CreateQueue(Guid id, string key);
 
         IExchange GetOrCreateExchange(string key);
     }

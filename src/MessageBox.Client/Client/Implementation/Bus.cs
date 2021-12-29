@@ -188,6 +188,11 @@ namespace MessageBox.Client.Implementation
 
         public async Task Run(CancellationToken cancellationToken)
         {
+            await _transport.Run(OnTrasportConnectionSucceed,cancellationToken: cancellationToken);
+        }
+
+        private async Task OnTrasportConnectionSucceed(CancellationToken cancellationToken)
+        {
             if (_options.Name != null)
             {
                 await Post(_messageFactory.CreateSetQueueNameMessage(_options.Name), cancellationToken);
@@ -200,9 +205,7 @@ namespace MessageBox.Client.Implementation
                 //subscribe to the exchange
                 await Post(_messageFactory.CreateSubsribeMessage(
                     receiverCallback.ModelType.FullName ?? throw new InvalidOperationException()), cancellationToken);
-            }
-
-            await _transport.Run(cancellationToken);
+            }                 
         }
 
         public async Task Stop(CancellationToken cancellationToken)

@@ -5,6 +5,7 @@ namespace MessageBox.Server.Implementation
 {
     internal class Queue : IQueue, IQueueControl
     {
+        private readonly string _key;
         private readonly IMessageFactory _messageFactory;
         private int _messageCount;
 
@@ -34,20 +35,27 @@ namespace MessageBox.Server.Implementation
 
         private readonly Channel<MessageEntry> _outgoingMessages = Channel.CreateUnbounded<MessageEntry>();
         private DateTime? _lastReceivedMessageTimeStamp;
+        private string? _name;
 
-        public Queue(Guid id, IMessageFactory messageFactory)
+        public Queue(Guid id, string key, IMessageFactory messageFactory)
         {
+            _key = key;
             _messageFactory = messageFactory;
             Id = id;
         }
 
         public Guid Id { get; }
-        
-        public string? Name { get; private set; }
-        
+
+        public string Name => _name == null ? _key : $"{_name}({_key})";
+
         public int GetTotalMessageCount()
         {
             return _messageCount;
+        }
+
+        public int GetCurrentMessageCount()
+        {
+            return _outgoingMessages.Reader.Count;
         }
 
         public async Task<bool> IsAlive(TimeSpan keepAliveTimeout, CancellationToken cancellationToken)
@@ -69,7 +77,7 @@ namespace MessageBox.Server.Implementation
             switch (message)
             {
                 case ISetQueueNameMessage setQueueNameMessage:
-                    Name = setQueueNameMessage.SetQueueName;
+                    _name = setQueueNameMessage.SetQueueName;
                     return;
                 case IKeepAliveMessage:
                     return;
@@ -96,6 +104,11 @@ namespace MessageBox.Server.Implementation
                     return messageEntry.Message;
                 }
             }
+        }
+
+        public void Stop()
+        {
+            _outgoingMessages.Writer.Complete();
         }
     }
 }

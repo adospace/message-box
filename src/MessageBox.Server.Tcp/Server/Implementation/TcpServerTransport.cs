@@ -19,7 +19,7 @@ namespace MessageBox.Server.Implementation
             _options = options;
         }
 
-        public async Task Run(CancellationToken cancellationToken)
+        public async Task Run(Func<CancellationToken, Task>? onConnectionSucceed, Func<CancellationToken, Task>? onConnectionEnded, CancellationToken cancellationToken)
         {
             await ConnectionLoop(cancellationToken);
         }
@@ -88,7 +88,7 @@ namespace MessageBox.Server.Implementation
                     var bus = _serviceProvider.GetRequiredService<IBusServer>();
                     var messageSink = _serviceProvider.GetRequiredService<IMessageSink>();
 
-                    var queue = bus.GetOrCreateQueue(queueId);
+                    var queue = bus.CreateQueue(queueId, socketConnectedToClient.RemoteEndPoint?.ToString() ?? throw new InvalidOperationException());
 
                     _clients[queueId] = new ConnectionFromClient(_serviceProvider, queue, id => _clients.TryRemove(id, out var _));
 

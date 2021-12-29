@@ -1,6 +1,7 @@
 ﻿@page "/"
 @using MessageBox.Server.Tcp.Host.Shared
 @using System.Linq
+@using MessageBox.Server.Tcp.Host.Client.Pages.Components
 @implements IDisposable
 @inject IMessageStatisticService _messageStatisticService
 
@@ -10,7 +11,7 @@
     <MudGrid>
         <MudItem xs="12" sm="12" md="12">
             <MudPaper Elevation="2" Class="pa-4">
-                <MudChart ChartType="ChartType.Line" ChartSeries="@_series" @bind-SelectedIndex="_selectedSeriesIndex" XAxisLabels="@_xAxisLabels.ToArray()" Width="100%" Height="350px"></MudChart>
+                <MessageChartComponent ChartSeriesConfigs="_seriesConfigs"  />
             </MudPaper>
         </MudItem>
     </MudGrid>
@@ -20,19 +21,11 @@
 {
     private Timer? _timer;
 
-    private static readonly TimeSpan ChartPeriod = TimeSpan.FromMinutes(1);
+    private MessageChartComponent.ChartSeriesConfig[] _seriesConfigs = Array.Empty<MessageChartComponent.ChartSeriesConfig>();
 
-    private int _selectedSeriesIndex = -1; //default value cannot be 0 -> first selectedindex is 0.
+    private Dictionary<string, (int CurrentCount, int TotalCount)> _tickValues = new();
+    private Dictionary<string, (int CurrentCount, int TotalCount)> _previousTickValues = new();
 
-    private readonly Dictionary<Guid, Queue<QueueMessageCountStatistic>> _queueMessageCountStatistics = new();
-    private readonly Dictionary<string, Queue<ExchangeMessageCountStatistic>> _exchangeMessageCountStatistics = new();
-
-    private readonly List<ChartSeries> _series = new();
-
-    private readonly List<string> _xAxisLabels = new();
-    
-    
-    
     protected override void OnInitialized()
     {
         _timer = new Timer(_=> InvokeAsync(OnTick), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
@@ -40,105 +33,28 @@
 
     private async Task OnTick()
     {
-        var now = DateTime.UtcNow;
-        var result = await _messageStatisticService.GetServerMessageStatistic();
+        var (queueMessageCountStatistics, exchangeMessageCountStatistics) = await _messageStatisticService.GetServerMessageStatistic();
 
-        foreach (var queueMessageCountStatistic in result.QueueMessageCountStatistics)
-        {
-            _queueMessageCountStatistics.TryGetValue(queueMessageCountStatistic.Id, out var queueMessageCountStatisticsQueue);
-            if (queueMessageCountStatisticsQueue == null)
-            {
-                _queueMessageCountStatistics[queueMessageCountStatistic.Id] = queueMessageCountStatisticsQueue = new Queue<QueueMessageCountStatistic>();
-            }
-            
-            if (queueMessageCountStatisticsQueue.Count > 100)
-            {
-                queueMessageCountStatisticsQueue.Dequeue();
-            }
+        var messageCountStatistics = exchangeMessageCountStatistics.Concat(queueMessageCountStatistics.Cast<IMessageCountStatistics>()).ToArray();
 
-            queueMessageCountStatisticsQueue.Enqueue(queueMessageCountStatistic);
-        }
-        
-        foreach (var exchangeMessageCountStatistic in result.ExchangeMessageCountStatistics)
-        {
-            _exchangeMessageCountStatistics.TryGetValue(exchangeMessageCountStatistic.Key, out var exchangeMessageCountStatisticsQueue);
-            if (exchangeMessageCountStatisticsQueue == null)
-            {
-                _exchangeMessageCountStatistics[exchangeMessageCountStatistic.Key] = exchangeMessageCountStatisticsQueue = new Queue<ExchangeMessageCountStatistic>();
-            }
-            
-            if (exchangeMessageCountStatisticsQueue.Count > 100)
-            {
-                exchangeMessageCountStatisticsQueue.Dequeue();
-            }
-            
-            exchangeMessageCountStatisticsQueue.Enqueue(exchangeMessageCountStatistic);
-        }
+        var newSeriesConfigs = messageCountStatistics.Select(_ => new MessageChartComponent.ChartSeriesConfig(_.Key, _.Label, GetSeriesValue)).ToArray();
 
-        try
+        _previousTickValues = _tickValues;
+        _tickValues = messageCountStatistics.ToDictionary(_ => _.Key, _ => (_.CurrentCount, _.TotalCount));
+
+        if (!newSeriesConfigs.SequenceEqual(_seriesConfigs))
         {
-            Console.WriteLine("Building series...");
-            BuildChartSeries(now);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            throw;
+            _seriesConfigs = newSeriesConfigs;
+            StateHasChanged();
         }
     }
 
-    private void BuildChartSeries(DateTime now)
+    private double GetSeriesValue(string key)
     {
-        _series.Clear();
-        _xAxisLabels.Clear();
-        
-        _series.AddRange(_queueMessageCountStatistics.Select(_ =>
-        {
-            var series = _.Value.GroupBy(item => (int)Math.Round((item.TimeStamp - now).TotalSeconds)).ToDictionary(item => item.Key, item => item.First());
-            return new ChartSeries()
-            {
-                Name = _.Key.ToString(),
-                Data = Enumerable.Range(-(int)ChartPeriod.TotalSeconds, (int)ChartPeriod.TotalSeconds)
-                    .Select(item =>
-                    {
-                        if (!series.TryGetValue(item - 1, out var prevSeriesItem)) return 0.0;
-                        if (series.TryGetValue(item, out var seriesItem))
-                        {
-                            return seriesItem.Value - prevSeriesItem.Value;
-                        }
-                        return 0.0;
-                    })
-                    .ToArray()
-            };
-        }));
-                
-        _series.AddRange(_exchangeMessageCountStatistics.Select(_ =>
-        {
-            var series = _.Value.GroupBy(item => (int)Math.Round((item.TimeStamp - now).TotalSeconds)).ToDictionary(item => item.Key, item => item.First());
-            return new ChartSeries()
-            {
-                Name = _.Key,
-                Data = Enumerable.Range(-(int)ChartPeriod.TotalSeconds, (int)ChartPeriod.TotalSeconds)
-                    .Select(item =>
-                    {
-                        if (!series.TryGetValue(item - 1, out var prevSeriesItem)) return 0.0;
-                        if (series.TryGetValue(item, out var seriesItem))
-                        {
-                            return seriesItem.Value - prevSeriesItem.Value;
-                        }
-                        return 0.0;
-                    })
-                    .ToArray()
-            };
-        }));
+        _previousTickValues.TryGetValue(key, out var previousTickValue);
+        _tickValues.TryGetValue(key, out var currentTickValue);
 
-        _xAxisLabels.AddRange(
-            Enumerable.Range(-(int)ChartPeriod.TotalSeconds, (int)ChartPeriod.TotalSeconds)
-                .Select(clockTick => now.AddSeconds(clockTick).ToLocalTime().ToShortTimeString()));
-        
-        StateHasChanged();
-
-        Console.WriteLine(string.Join(Environment.NewLine, _series.Select(_ => _.Name + " -> " + string.Join("-", _.Data))));
+        return currentTickValue.CurrentCount + currentTickValue.TotalCount - previousTickValue.TotalCount;
     }
 
     public void Dispose()

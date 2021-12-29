@@ -1,0 +1,107 @@
+﻿@using Blazorise.Charts
+@using Blazorise.Charts.Streaming
+
+
+<LineChart @ref="_horizontalLineChart" TItem="LiveDataPoint" OptionsObject="@_horizontalLineChartOptions">
+    <ChartStreaming TItem="LiveDataPoint"
+                    Options="new ChartStreamingOptions { Delay = 2000 }"
+                    Refreshed="@OnHorizontalLineRefreshed" />
+</LineChart> 
+
+@code{
+
+    public record ChartSeriesConfig(string Key, string Label, Func<string, double> GetValueFunc);
+
+    [Parameter]
+    public ChartSeriesConfig[]? ChartSeriesConfigs { get; set; }
+
+
+    LineChart<LiveDataPoint>? _horizontalLineChart;
+    
+    readonly string[] _backgroundColors = { ChartColor.FromRgba( 255, 99, 132, 0.2f ), ChartColor.FromRgba( 54, 162, 235, 0.2f ), ChartColor.FromRgba( 255, 206, 86, 0.2f ), ChartColor.FromRgba( 75, 192, 192, 0.2f ), ChartColor.FromRgba( 153, 102, 255, 0.2f ), ChartColor.FromRgba( 255, 159, 64, 0.2f ) };
+    readonly string[] _borderColors = { ChartColor.FromRgba( 255, 99, 132, 1f ), ChartColor.FromRgba( 54, 162, 235, 1f ), ChartColor.FromRgba( 255, 206, 86, 1f ), ChartColor.FromRgba( 75, 192, 192, 1f ), ChartColor.FromRgba( 153, 102, 255, 1f ), ChartColor.FromRgba( 255, 159, 64, 1f ) };
+
+    public struct LiveDataPoint
+    {
+        // ReSharper disable once UnusedAutoPropertyAccessor.Global
+        public object X { get; set; } = null!;
+
+        // ReSharper disable once UnusedAutoPropertyAccessor.Global
+        public object Y { get; set; } = null!;
+    }
+
+    readonly object _horizontalLineChartOptions = new
+    {
+        Title = new
+        {
+            Display = true,
+            Text = "Line chart (horizontal scroll) sample"
+        },
+        Scales = new
+        {
+            YAxes = new object[]
+            {
+                new 
+                {
+                    ScaleLabel = new 
+                    {
+                        Display = true, 
+                        LabelString = "value" 
+                    }
+                }
+            }
+        },
+        Tooltips = new
+        {
+            Mode = "nearest",
+            Intersect = false
+        },
+        Hover = new
+        {
+            Mode = "nearest",
+            Intersect = false
+        }
+    };
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (ChartSeriesConfigs != null && _horizontalLineChart != null)
+        {
+            await _horizontalLineChart.Clear();
+
+            await _horizontalLineChart.AddDatasetsAndUpdate(
+                ChartSeriesConfigs.Select((config, index) => 
+                    GetLineChartDataset(index, config.Label))
+                    .ToArray());
+        }
+    }
+
+    private LineChartDataset<LiveDataPoint> GetLineChartDataset(int index, string label)
+    {
+        return new LineChartDataset<LiveDataPoint>
+        {
+            Data = new List<LiveDataPoint>(),
+            Label = label,
+            BackgroundColor = _backgroundColors[index % _backgroundColors.Length],
+            BorderColor = _borderColors[index % _borderColors.Length],
+            Fill = false,
+            LineTension = 0,
+        };
+    }
+
+    Task OnHorizontalLineRefreshed( ChartStreamingData<LiveDataPoint> data )
+    {
+        if (ChartSeriesConfigs == null)
+        {
+            return Task.CompletedTask;
+        }
+
+        data.Value = new LiveDataPoint
+        {
+            X = DateTime.Now,
+            Y = ChartSeriesConfigs[data.DatasetIndex].GetValueFunc(ChartSeriesConfigs[data.DatasetIndex].Key),
+        };
+
+        return Task.CompletedTask;
+    }
+}

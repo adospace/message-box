@@ -112,12 +112,18 @@ namespace MessageBox.Server.Implementation
 
         public void Stop()
         {
+            _outgoingMessages.Writer.Complete();
             _cancellationTokenSource.Cancel();
         }
         
         public int GetTotalMessageCount()
         {
             return _messageCount;
+        }
+
+        public int GetCurrentMessageCount()
+        {
+            return _outgoingMessages.Reader.Count;
         }
 
         public IReadOnlyList<IQueueControl> GetSubscribers()
@@ -134,11 +140,6 @@ namespace MessageBox.Server.Implementation
 
         public bool IsAlive(TimeSpan keepAliveTimeout)
         {
-            if (_outgoingMessages.Reader.Count > 0)
-            {
-                return true;
-            }
-
             return (DateTime.UtcNow - _lastReceivedMessageTimeStamp) <= keepAliveTimeout;
         }
     }

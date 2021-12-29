@@ -1,8 +1,9 @@
 ﻿using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
-using MessageBox;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+// ReSharper disable NotAccessedPositionalProperty.Global
+// ReSharper disable UnusedAutoPropertyAccessor.Global
 
 
 BenchmarkRunner.Run(typeof(MessageBox.Benchmark.TestBench).Assembly);
@@ -48,38 +49,26 @@ namespace MessageBox.Benchmark
 
             _serverTask = _serverHost.StartAsync();
 
-            _clientHosts = Enumerable.Range(1, ClientCount).Select(index => 
-            {
-                return Host.CreateDefaultBuilder()
-                    .AddMessageBoxTcpClient(System.Net.IPAddress.Loopback, 12000)
-                    .AddJsonSerializer()
-                    .Build();
-            }).ToArray();
+            _clientHosts = Enumerable.Range(1, ClientCount).Select(_ => Host.CreateDefaultBuilder()
+                .AddMessageBoxTcpClient(System.Net.IPAddress.Loopback, 12000)
+                .AddJsonSerializer()
+                .Build()).ToArray();
 
-            _clientTasks = _clientHosts.Select(clientHost =>
-            {
-                return clientHost.StartAsync();
-            }).ToArray();
+            _clientTasks = _clientHosts.Select(clientHost => clientHost.StartAsync()).ToArray();
 
-            _consumerHosts = _clientHosts.Select(clientHost =>
-            {
-                return Host.CreateDefaultBuilder()
-                    .AddMessageBoxTcpClient(System.Net.IPAddress.Loopback, 12000)
-                    .AddJsonSerializer()
-                    .AddConsumer<SampleConsumer>()
-                    .Build();
-            }).ToArray();
+            _consumerHosts = _clientHosts.Select(_ => Host.CreateDefaultBuilder()
+                .AddMessageBoxTcpClient(System.Net.IPAddress.Loopback, 12000)
+                .AddJsonSerializer()
+                .AddConsumer<SampleConsumer>()
+                .Build()).ToArray();
 
-            _consumerTasks = _consumerHosts.Select(consumerHost =>
-            {
-                return consumerHost.StartAsync();
-            }).ToArray();
+            _consumerTasks = _consumerHosts.Select(consumerHost => consumerHost.StartAsync()).ToArray();
         
             Random rnd = new();
             _callersTask = _clientHosts.Select(clientHost => Task.Run(async () =>
             {
                 var bus = clientHost.Services.GetRequiredService<IBusClient>();
-                for (int i = 0; i < CallCount; i++)
+                for (var i = 0; i < CallCount; i++)
                 {
                     await bus.SendAndGetReply<SampleCallModelReply>(new SampleCallModel(new string('*', rnd.Next(150)), rnd.Next(0, 123)));
                 }
@@ -116,7 +105,7 @@ namespace MessageBox.Benchmark
 
     public class SampleConsumer : IHandler<SampleCallModel, SampleCallModelReply>
     {
-        private static readonly Random _rnd = new();
+        private static readonly Random Rnd = new();
 
         private static int _calls;
         public static int Calls => _calls;
@@ -124,7 +113,7 @@ namespace MessageBox.Benchmark
         public Task<SampleCallModelReply> Handle(IMessageContext<SampleCallModel> messageContext, CancellationToken cancellationToken = default)
         {
             Interlocked.Increment(ref _calls);
-            return Task.FromResult(new SampleCallModelReply(new string('*', _rnd.Next(150)), _rnd.Next(), DateTime.MinValue));
+            return Task.FromResult(new SampleCallModelReply(new string('*', Rnd.Next(150)), Rnd.Next(), DateTime.MinValue));
         }
     }
 }

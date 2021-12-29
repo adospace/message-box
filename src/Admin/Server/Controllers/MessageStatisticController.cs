@@ -8,12 +8,10 @@ namespace MessageBox.Server.Tcp.Host.Server.Controllers
     public class MessageStatisticController : ControllerBase
     {
         private readonly IBusServerControl _busServerControl;
-        private readonly ILogger<MessageStatisticController> _logger;
 
-        public MessageStatisticController(IBusServerControl busServerControl, ILogger<MessageStatisticController> logger)
+        public MessageStatisticController(IBusServerControl busServerControl)
         {
             _busServerControl = busServerControl;
-            _logger = logger;
         }
 
         [HttpGet("message-count")]
@@ -24,10 +22,10 @@ namespace MessageBox.Server.Tcp.Host.Server.Controllers
             var timeStamp = DateTime.UtcNow;
 
             return new ServerMessageCountStatistic(
-                queueControls.Select(_ => new QueueMessageCountStatistic(_.Id, timeStamp, _.GetTotalMessageCount()))
+                queueControls.Select(_ => new QueueMessageCountStatistic(_.Id, _.Name, timeStamp, _.GetTotalMessageCount(), _.GetCurrentMessageCount()))
                     .ToArray(),
                 exchangeControls
-                    .Select(_ => new ExchangeMessageCountStatistic(_.Key, timeStamp, _.GetTotalMessageCount()))
+                    .Select(_ => new ExchangeMessageCountStatistic(_.Key, timeStamp, _.GetTotalMessageCount(), _.GetCurrentMessageCount()))
                     .ToArray());
         }
         
@@ -38,7 +36,7 @@ namespace MessageBox.Server.Tcp.Host.Server.Controllers
             
             var timeStamp = DateTime.UtcNow;
 
-            return queueControls.Select(_ => new QueueMessageCountStatistic(_.Id, timeStamp, _.GetTotalMessageCount()));
+            return queueControls.Select(_ => new QueueMessageCountStatistic(_.Id, _.Name, timeStamp, _.GetTotalMessageCount(), _.GetCurrentMessageCount()));
         }
         
         [HttpGet("exchanges-message-count")]
@@ -48,7 +46,7 @@ namespace MessageBox.Server.Tcp.Host.Server.Controllers
             
             var timeStamp = DateTime.UtcNow;
 
-            return exchangeControls.Select(_ => new ExchangeMessageCountStatistic(_.Key, timeStamp, _.GetTotalMessageCount()));
+            return exchangeControls.Select(_ => new ExchangeMessageCountStatistic(_.Key, timeStamp, _.GetTotalMessageCount(), _.GetCurrentMessageCount()));
         }
                 
         [HttpGet("queue-message-count")]
@@ -61,7 +59,7 @@ namespace MessageBox.Server.Tcp.Host.Server.Controllers
                 return NotFound();
             }
             
-            return Ok(new QueueMessageCountStatistic(queueControl.Id, DateTime.UtcNow, queueControl.GetTotalMessageCount()));
+            return Ok(new QueueMessageCountStatistic(queueControl.Id, queueControl.Name, DateTime.UtcNow, queueControl.GetTotalMessageCount(), queueControl.GetCurrentMessageCount()));
         }
         
         [HttpGet("exchange-message-count")]
@@ -74,7 +72,7 @@ namespace MessageBox.Server.Tcp.Host.Server.Controllers
                 return NotFound();
             }
 
-            return Ok(new ExchangeMessageCountStatistic(exchangeControl.Key, DateTime.UtcNow, exchangeControl.GetTotalMessageCount()));
+            return Ok(new ExchangeMessageCountStatistic(exchangeControl.Key, DateTime.UtcNow, exchangeControl.GetTotalMessageCount(), exchangeControl.GetCurrentMessageCount()));
         }
         
     }

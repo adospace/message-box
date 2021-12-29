@@ -1,6 +1,5 @@
 ﻿using MessageBox.Tcp;
 using Microsoft.Extensions.DependencyInjection;
-using System.Buffers;
 using System.Net.Sockets;
 
 namespace MessageBox.Client.Implementation
@@ -15,7 +14,7 @@ namespace MessageBox.Client.Implementation
             _options = options;
         }
 
-        public async Task Run(CancellationToken cancellationToken)
+        public async Task Run(Func<CancellationToken, Task>? onConnectionSucceed, Func<CancellationToken, Task>? onConnectionEnded, CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -25,14 +24,30 @@ namespace MessageBox.Client.Implementation
                 {
                     await tcpClient.ConnectAsync(_options.ServerEndPoint, cancellationToken);
                 }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
                 catch (Exception)
                 {
                     if (!cancellationToken.IsCancellationRequested)
                     {
-                        await Task.Delay(10000, cancellationToken);
+                        try
+                        {
+                            await Task.Delay(10000, cancellationToken);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            break;
+                        }
                     }
 
                     continue;
+                }
+
+                if (onConnectionSucceed != null)
+                {
+                    await onConnectionSucceed(cancellationToken);
                 }
 
                 await RunConnectionLoop(
@@ -40,6 +55,11 @@ namespace MessageBox.Client.Implementation
                     messageSource: _serviceProvider.GetRequiredService<IMessageSource>(),
                     messageSink: _serviceProvider.GetRequiredService<IMessageSink>(),
                     cancellationToken);
+                
+                if (onConnectionEnded != null)
+                {
+                    await onConnectionEnded(cancellationToken);
+                }
             }
         }
 

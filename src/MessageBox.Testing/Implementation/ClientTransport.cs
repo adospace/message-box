@@ -12,9 +12,15 @@ namespace MessageBox.Testing.Implementation
             _serviceProvider = serviceProvider;
         }
 
-        public async Task Run(CancellationToken cancellationToken)
+        public async Task Run(Func<CancellationToken, Task>? onConnectionSucceed, Func<CancellationToken, Task>? onConnectionEnded, CancellationToken cancellationToken)
         {
             var connectedClient = ServerTransport.Instance?.OnClientConnected(this) ?? throw new InvalidOperationException();
+
+            if (onConnectionSucceed != null)
+            {
+                await onConnectionSucceed(cancellationToken);
+            }
+            
             var source = _serviceProvider.GetRequiredService<IMessageSource>();
 
             while (!cancellationToken.IsCancellationRequested)

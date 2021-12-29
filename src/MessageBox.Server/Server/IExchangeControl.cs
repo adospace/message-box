@@ -6,6 +6,8 @@ public interface IExchangeControl
 
     int GetTotalMessageCount();
 
+    int GetCurrentMessageCount();
+
     IReadOnlyList<IQueueControl> GetSubscribers();
 
     bool IsAlive(TimeSpan keepAliveTimeout);

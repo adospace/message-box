@@ -248,7 +248,7 @@ namespace MessageBox.Tests
             await Task.Delay(1000);
             
             var busServerControl = serverHost.Services.GetRequiredService<IBusServerControl>();
-            var queue = busServerControl.GetQueues().FirstOrDefault(_ => _.Name == "queue_name");
+            var queue = busServerControl.GetQueues().FirstOrDefault(_ => _.Name.StartsWith("queue_name"));
             queue.Should().NotBeNull();
         }
     }

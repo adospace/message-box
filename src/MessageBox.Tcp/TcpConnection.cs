@@ -28,7 +28,7 @@ namespace MessageBox.Tcp
             IMessageSink messageSink,
             CancellationToken cancellationToken = default)
         {
-            IMessageFactory messageFactory = _serviceProvider.GetRequiredService<IMessageFactory>();
+            var messageFactory = _serviceProvider.GetRequiredService<IMessageFactory>();
 
             var receiver = new TcpConnectionMessageReceiver(
                 messageFactory,
