@@ -1,18 +1,17 @@
 ﻿using MessageBox.Messages;
 using Microsoft.Extensions.DependencyInjection;
-using System.Buffers;
 using System.IO.Pipelines;
 using System.Net.Sockets;
 
-namespace MessageBox.Tcp
+namespace MessageBox
 {
     public abstract class TcpConnection
     {
-        protected readonly IServiceProvider _serviceProvider;
+        protected readonly IServiceProvider ServiceProvider;
 
         public TcpConnection(IServiceProvider serviceProvider)
         {
-            _serviceProvider = serviceProvider;
+            ServiceProvider = serviceProvider;
         }
 
         public async void StartConnectionLoop(
@@ -28,7 +27,7 @@ namespace MessageBox.Tcp
             IMessageSink messageSink,
             CancellationToken cancellationToken = default)
         {
-            var messageFactory = _serviceProvider.GetRequiredService<IMessageFactory>();
+            var messageFactory = ServiceProvider.GetRequiredService<IMessageFactory>();
 
             var receiver = new TcpConnectionMessageReceiver(
                 messageFactory,
@@ -157,7 +156,7 @@ namespace MessageBox.Tcp
             }
         }
 
-        internal class TcpConnectionMessageSender
+        private class TcpConnectionMessageSender
         {
             private readonly IMessageSource _messageSource;
             private readonly Socket _connectedSocket;
@@ -190,16 +189,16 @@ namespace MessageBox.Tcp
                         ((ISerializableMessage)message).Serialize(writer);
 
                         (message as IDisposable)?.Dispose();
+
+                        // Make the data available to the PipeReader.
+                        var result = await writer.FlushAsync(_cancellationToken);
+
+                        if (result.IsCompleted)
+                        {
+                            break;
+                        }
                     }
                     catch (OperationCanceledException)
-                    {
-                        break;
-                    }
-
-                    // Make the data available to the PipeReader.
-                    var result = await writer.FlushAsync(_cancellationToken);
-
-                    if (result.IsCompleted)
                     {
                         break;
                     }

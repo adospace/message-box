@@ -1,5 +1,4 @@
-﻿using MessageBox.Tcp;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using System.Net.Sockets;
 
 namespace MessageBox.Client.Implementation
@@ -47,8 +46,8 @@ namespace MessageBox.Client.Implementation
 
                     await RunConnectionLoop(
                         connectedSocket: tcpClient.Client, 
-                        messageSource: _serviceProvider.GetRequiredService<IMessageSource>(),
-                        messageSink: _serviceProvider.GetRequiredService<IMessageSink>(),
+                        messageSource: ServiceProvider.GetRequiredService<IMessageSource>(),
+                        messageSink: ServiceProvider.GetRequiredService<IMessageSink>(),
                         cancellationToken);
                 
                     if (onConnectionEnded != null)

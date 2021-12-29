@@ -1,6 +1,5 @@
 ﻿
 using MessageBox.Messages;
-using MessageBox.Tcp;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net.Sockets;
 
@@ -62,7 +61,7 @@ namespace MessageBox.Server.Implementation
             => base.RunConnectionLoop(
                 connectedSocket: connectedSocket, 
                 messageSource: messageSource,
-                messageSink: new ConnectionFromClientForBoxWrapper(_queue, messageSink, _serviceProvider.GetRequiredService<IMessageFactory>()), 
+                messageSink: new ConnectionFromClientForBoxWrapper(_queue, messageSink, ServiceProvider.GetRequiredService<IMessageFactory>()), 
                 cancellationToken);
 
         protected override void OnConnectionLoopEnded() => 
