@@ -37,11 +37,18 @@ namespace MessageBox.Testing.Implementation
 
         internal async void Start()
         {
-            while (!_cts.IsCancellationRequested)
+            try
             {
-                var message = await _queue.GetNextMessageToSend(_cts.Token);
+                while (!_cts.IsCancellationRequested)
+                {
+                    var message = await _queue.GetNextMessageToSend(_cts.Token);
 
-                await _client.OnReceiveMessageFromServer(message, _cts.Token);
+                    await _client.OnReceiveMessageFromServer(message, _cts.Token);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                
             }
         }
 
