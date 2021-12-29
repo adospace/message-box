@@ -5,7 +5,7 @@ using Microsoft.Extensions.Hosting;
 
 
 using var clientHost = Host.CreateDefaultBuilder()
-    .AddMessageBoxTcpClient(new TcpBusClientOptions(System.Net.IPAddress.Loopback, 12000){ DefaultCallTimeout = TimeSpan.FromSeconds(2)})
+    .AddMessageBoxTcpClient(new TcpBusClientOptions(System.Net.IPAddress.Loopback, 8300){ DefaultCallTimeout = TimeSpan.FromSeconds(2)})
     .AddJsonSerializer()
     .AddConsumer<DemoConsumer>()
     .Build();

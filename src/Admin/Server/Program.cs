@@ -7,7 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
-builder.Services.AddMessageBoxTcpServer(12000);
+builder.Services.AddMessageBoxTcpServer(8300);
 
 var app = builder.Build();
 
