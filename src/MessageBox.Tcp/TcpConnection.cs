@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using System.IO.Pipelines;
 using System.Net.Sockets;
+using System.Threading.Channels;
 
 namespace MessageBox
 {
@@ -199,6 +200,10 @@ namespace MessageBox
                         }
                     }
                     catch (OperationCanceledException)
+                    {
+                        break;
+                    }
+                    catch (ChannelClosedException)
                     {
                         break;
                     }

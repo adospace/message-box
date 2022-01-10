@@ -1,4 +1,5 @@
-﻿using MessageBox.Messages;
+﻿using System.Threading.Channels;
+using MessageBox.Messages;
 
 namespace MessageBox.Testing.Implementation
 {
@@ -48,7 +49,10 @@ namespace MessageBox.Testing.Implementation
             }
             catch (OperationCanceledException)
             {
-                
+
+            }
+            catch (ChannelClosedException)
+            {
             }
         }
 
