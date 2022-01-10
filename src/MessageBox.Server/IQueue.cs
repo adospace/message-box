@@ -4,6 +4,8 @@
     {
         Guid Id { get; }
 
+        string Name { get; }
+
         void Stop();
     }
 }

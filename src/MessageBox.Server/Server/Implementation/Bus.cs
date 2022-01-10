@@ -1,4 +1,5 @@
 ﻿using MessageBox.Messages;
+using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 
 namespace MessageBox.Server.Implementation
@@ -6,15 +7,19 @@ namespace MessageBox.Server.Implementation
     internal class Bus : IBus, IMessageSink, IBusServer, IBusServerControl
     {
         private readonly IMessageFactory _messageFactory;
+        private readonly ILogger<Bus> _logger;
+        private readonly ILoggerFactory _loggerFactory;
         private readonly ConcurrentDictionary<string, IExchange> _exchanges = new(StringComparer.InvariantCultureIgnoreCase);
 
         private readonly ConcurrentDictionary<Guid, IQueue> _queues = new();
 
         private readonly ITransport _transport;
 
-        public Bus(ITransportFactory transportFactory, IMessageFactory messageFactory)
+        public Bus(ITransportFactory transportFactory, IMessageFactory messageFactory, ILogger<Bus> logger, ILoggerFactory loggerFactory)
         {
             _messageFactory = messageFactory;
+            _logger = logger;
+            _loggerFactory = loggerFactory;
             _transport = transportFactory.Create();
         }
 
@@ -30,7 +35,9 @@ namespace MessageBox.Server.Implementation
             {
                 throw new ArgumentException($"'{nameof(key)}' cannot be null or whitespace.", nameof(key));
             }
-            
+
+            _logger.LogDebug("Creating Queue '{Name}' ({Id})", key, id);
+
             return _queues.GetOrAdd(id, _ => new Queue(_, key, _messageFactory));
         }
 
@@ -43,7 +50,9 @@ namespace MessageBox.Server.Implementation
 
             return _exchanges.GetOrAdd(key, _ =>
             {
-                var board = new Exchange(_);
+                _logger.LogDebug("Creating Exchange '{Key}'", key);
+
+                var board = new Exchange(_, _loggerFactory.CreateLogger<Exchange>());
                 board.Start();
                 return board;
             });
@@ -51,11 +60,15 @@ namespace MessageBox.Server.Implementation
 
         public async Task Run(CancellationToken cancellationToken)
         {
+            _logger.LogTrace("Start bus");
+
             await _transport.Run(cancellationToken: cancellationToken);
         }
 
         public async Task Stop(CancellationToken cancellationToken)
         {
+            using var _ = _logger.BeginScope("Stop bus");
+
             await _transport.Stop(cancellationToken);
 
             foreach (var board in _exchanges.ToArray())
@@ -141,6 +154,7 @@ namespace MessageBox.Server.Implementation
         {
             if (_queues.Remove(id, out var queue))
             {
+                _logger.LogDebug("Removing Queue '{Name}' ({Id})", queue.Name, id);
                 queue.Stop();
             }
         }
@@ -149,6 +163,7 @@ namespace MessageBox.Server.Implementation
         {
             if (_exchanges.Remove(name, out var exchange))
             {
+                _logger.LogDebug("Removing Exchange '{Key}'", exchange.Key);
                 exchange.Stop();    
             }
         }

@@ -1,15 +1,18 @@
 ﻿using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace MessageBox.Server.Implementation;
 
 public class CleanUpService : BackgroundService
 {
     private readonly IBusServerControl _busServerControl;
+    private readonly ILogger<CleanUpService> _logger;
     private readonly TimeSpan _keepAliveTimeout;
 
-    public CleanUpService(IBusServerControl busServerControl, ICleanUpServiceOptions? options = null)
+    public CleanUpService(IBusServerControl busServerControl, ILogger<CleanUpService> logger, ICleanUpServiceOptions? options = null)
     {
         _busServerControl = busServerControl;
+        _logger = logger;
         _keepAliveTimeout = options?.KeepAliveTimeout ?? TimeSpan.FromSeconds(10);
     }
 
@@ -27,6 +30,7 @@ public class CleanUpService : BackgroundService
                 {
                     if (!await queueControl.IsAlive(_keepAliveTimeout, cancellationToken))
                     {
+                        _logger.LogDebug("Deleting Queue '{Name}' ({Id})", queueControl.Name, queueControl.Id);
                         _busServerControl.DeleteQueue(queueControl.Id);
                     }
                 }
@@ -37,6 +41,7 @@ public class CleanUpService : BackgroundService
                 {
                     if (!exchangeControl.IsAlive(_keepAliveTimeout))
                     {
+                        _logger.LogDebug("Deleting Exchange '{Key}'", exchangeControl.Key);
                         _busServerControl.DeleteExchange(exchangeControl.Key);
                     }
                 }

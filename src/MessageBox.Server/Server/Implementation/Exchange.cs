@@ -1,4 +1,5 @@
 ﻿using MessageBox.Messages;
+using Microsoft.Extensions.Logging;
 using Nito.AsyncEx;
 using System.Collections.Concurrent;
 using System.Threading.Channels;
@@ -16,14 +17,17 @@ namespace MessageBox.Server.Implementation
         private readonly CancellationTokenSource _cancellationTokenSource = new();
 
         private readonly AsyncAutoResetEvent _subscribersListIsEmptyEvent = new();
-
+        
+        private readonly ILogger<Exchange> _logger;
+        
         private DateTime _lastReceivedMessageTimeStamp = DateTime.UtcNow;
 
         private int _messageCount;
 
-        public Exchange(string key)
+        public Exchange(string key, ILogger<Exchange> logger)
         {
             Key = key;
+            _logger = logger;
         }
 
         public string Key { get; }
@@ -40,6 +44,8 @@ namespace MessageBox.Server.Implementation
             _subscribersQueue.Enqueue(refToBox);
 
             _subscribersListIsEmptyEvent.Set();
+
+            _logger.LogDebug("Exchange {Key} Subscribed Queue '{Name}' ({Id})", Key, queue.Name, queue.Id);
         }
 
         public async void Start()
