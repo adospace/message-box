@@ -54,7 +54,7 @@ namespace MessageBox.Server.Implementation
                     {
                         break;
                     }
-                    
+
                     _lastReceivedMessageTimeStamp = DateTime.UtcNow;
                     _messageCount++;
 
@@ -106,7 +106,10 @@ namespace MessageBox.Server.Implementation
                 }
             }
             catch (OperationCanceledException)
-            { 
+            {
+            }
+            catch (ChannelClosedException)
+            {
             }
         }
 

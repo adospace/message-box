@@ -20,13 +20,13 @@ Console.CancelKeyPress += (_, _) =>
     Console.WriteLine("Exiting...");
     cancellationTokenSource.Cancel();
 };
-
+var rnd = new Random();
 try
 {
     while (!cancellationTokenSource.IsCancellationRequested)
     {
         // do something
-        await Task.Delay(1000, cancellationTokenSource.Token);
+        await Task.Delay(rnd.Next(1, 10), cancellationTokenSource.Token);
         
         try
         {
