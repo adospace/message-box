@@ -7,6 +7,7 @@ It's not a full fledged product nor it aims to be a one tool for every scenario 
 
 [![Build status](https://ci.appveyor.com/api/projects/status/dkyae4p5jagnu3k4?svg=true)](https://ci.appveyor.com/project/adospace/message-box)
 [![codecov](https://codecov.io/gh/adospace/message-box/branch/main/graph/badge.svg?token=3M6R96NL54)](https://codecov.io/gh/adospace/message-box)
+[![CodeFactor](https://www.codefactor.io/repository/github/adospace/message-box/badge)](https://www.codefactor.io/repository/github/adospace/message-box)
 
 Main features
 - ## Native implementation in .NET highly optimized to reduce memory occupation and CPU usage
