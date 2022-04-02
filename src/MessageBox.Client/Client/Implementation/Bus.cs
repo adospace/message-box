@@ -188,7 +188,14 @@ namespace MessageBox.Client.Implementation
 
         public async Task Run(CancellationToken cancellationToken)
         {
-            await _transport.Run(OnTrasportConnectionSucceed,cancellationToken: cancellationToken);
+            try
+            {
+                await _transport.Run(OnTrasportConnectionSucceed, cancellationToken: cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+
+            }
         }
 
         private async Task OnTrasportConnectionSucceed(CancellationToken cancellationToken)

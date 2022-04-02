@@ -28,14 +28,11 @@ public class CleanUpService : BackgroundService
 
                 foreach (var queueControl in queueControls)
                 {
-                    if (!await queueControl.IsAlive(_keepAliveTimeout, cancellationToken))
-                    {
-                        _logger.LogDebug("Deleting Queue '{Name}' ({Id})", queueControl.Name, queueControl.Id);
-                        _busServerControl.DeleteQueue(queueControl.Id);
-                    }
+                    await queueControl.TryToKeepAlive(cancellationToken);
                 }
 
                 var exchangeControls = _busServerControl.GetExchanges();
+                _logger.LogTrace("Current Exchange count: {ExchangeCount}", exchangeControls.Count);
 
                 foreach (var exchangeControl in exchangeControls)
                 {
@@ -43,6 +40,10 @@ public class CleanUpService : BackgroundService
                     {
                         _logger.LogDebug("Deleting Exchange '{Key}'", exchangeControl.Key);
                         _busServerControl.DeleteExchange(exchangeControl.Key);
+                    }
+                    else
+                    {
+                        _logger.LogTrace("Exchange '{Key}' has {QueueCount} subscribed queues", exchangeControl.Key, exchangeControl.GetSubscribers().Count);
                     }
                 }
             }

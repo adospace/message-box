@@ -53,6 +53,11 @@ namespace MessageBox.Testing.Implementation
             }
             catch (ChannelClosedException)
             {
+
+            }
+            catch (ObjectDisposedException)
+            {
+
             }
         }
 

@@ -34,7 +34,6 @@ namespace MessageBox.Server.Implementation
         }
 
         private readonly Channel<MessageEntry> _outgoingMessages = Channel.CreateUnbounded<MessageEntry>();
-        private DateTime? _lastReceivedMessageTimeStamp;
         private string? _name;
 
         public Queue(Guid id, string key, IMessageFactory messageFactory)
@@ -58,22 +57,13 @@ namespace MessageBox.Server.Implementation
             return _outgoingMessages.Reader.Count;
         }
 
-        public async Task<bool> IsAlive(TimeSpan keepAliveTimeout, CancellationToken cancellationToken)
+        public async Task TryToKeepAlive(CancellationToken cancellationToken)
         {
-            if ((DateTime.UtcNow - _lastReceivedMessageTimeStamp) > keepAliveTimeout)
-            {
-                return false;
-            }
-
             await _outgoingMessages.Writer.WriteAsync(new MessageEntry(_messageFactory.CreateKeepAliveMessage(Id), int.MaxValue), cancellationToken);
-            
-            return true;
         }
 
         public async Task OnReceivedMessage(IMessage message, CancellationToken cancellationToken)
         {
-            _lastReceivedMessageTimeStamp = DateTime.UtcNow;
-            
             switch (message)
             {
                 case ISetQueueNameMessage setQueueNameMessage:

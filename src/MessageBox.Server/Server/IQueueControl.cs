@@ -10,6 +10,6 @@ public interface IQueueControl
     
     int GetCurrentMessageCount();
 
-    Task<bool> IsAlive(TimeSpan keepAliveTimeout, CancellationToken cancellationToken = default);
+    Task TryToKeepAlive(CancellationToken cancellationToken = default);
     
 }

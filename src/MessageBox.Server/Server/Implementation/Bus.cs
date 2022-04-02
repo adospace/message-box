@@ -11,7 +11,7 @@ namespace MessageBox.Server.Implementation
         private readonly ILoggerFactory _loggerFactory;
         private readonly ConcurrentDictionary<string, IExchange> _exchanges = new(StringComparer.InvariantCultureIgnoreCase);
 
-        private readonly ConcurrentDictionary<Guid, IQueue> _queues = new();
+        private readonly ConcurrentDictionary<Guid, WeakReference<IQueue>> _queues = new();
 
         private readonly ITransport _transport;
 
@@ -25,7 +25,12 @@ namespace MessageBox.Server.Implementation
 
         public IQueue? GetQueue(Guid id)
         {
-            _queues.TryGetValue(id, out var queue);
+            if (!_queues.TryGetValue(id, out var queueRef))
+            {
+                return null;
+            }
+
+            queueRef.TryGetTarget(out var queue);
             return queue;
         }
 
@@ -38,7 +43,9 @@ namespace MessageBox.Server.Implementation
 
             _logger.LogDebug("Creating Queue '{Name}' ({Id})", key, id);
 
-            return _queues.GetOrAdd(id, _ => new Queue(_, key, _messageFactory));
+            var queue = new Queue(id, key, _messageFactory);
+            _queues[id] = new WeakReference<IQueue>(queue);
+            return queue;
         }
 
         public IExchange GetOrCreateExchange(string key)
@@ -78,7 +85,10 @@ namespace MessageBox.Server.Implementation
             
             foreach (var board in _queues.ToArray())
             {
-                board.Value.Stop();
+                if (board.Value.TryGetTarget(out var queue))
+                {
+                    queue.Stop();
+                }
             }
         }
 
@@ -110,8 +120,8 @@ namespace MessageBox.Server.Implementation
                 }
                 case IReplyMessage queuedMessage:
                 {
-                    _queues.TryGetValue(queuedMessage.ReplyToBoxId, out var queue);
-                    if (queue != null)
+                    _queues.TryGetValue(queuedMessage.ReplyToBoxId, out var queueRef);
+                    if (queueRef != null && queueRef.TryGetTarget(out var queue))
                     {
                         await queue.OnReceivedMessage(message, cancellationToken);
                     }
@@ -119,8 +129,8 @@ namespace MessageBox.Server.Implementation
                 }
                 case ISetQueueNameQueuedMessage setQueueNameQueuedMessage:
                 {
-                    _queues.TryGetValue(setQueueNameQueuedMessage.QueueId, out var queue);
-                    if (queue != null)
+                    _queues.TryGetValue(setQueueNameQueuedMessage.QueueId, out var queueRef);
+                    if (queueRef != null && queueRef.TryGetTarget(out var queue))
                     {
                         await queue.OnReceivedMessage(message, cancellationToken);
                     }
@@ -128,8 +138,8 @@ namespace MessageBox.Server.Implementation
                 }
                 case IKeepAliveMessage keepAliveMessage:
                 {
-                    _queues.TryGetValue(keepAliveMessage.QueueId, out var queue);
-                    if (queue != null)
+                    _queues.TryGetValue(keepAliveMessage.QueueId, out var queueRef);
+                    if (queueRef != null && queueRef.TryGetTarget(out var queue))
                     {
                         await queue.OnReceivedMessage(message, cancellationToken);
                     }
@@ -142,7 +152,14 @@ namespace MessageBox.Server.Implementation
 
         public IReadOnlyList<IQueueControl> GetQueues()
         {
-            return _queues.Values.Cast<IQueueControl>().ToList();
+            return _queues.Values.ToList().Select(_ => 
+            {
+                _.TryGetTarget(out var queue);
+                return queue;
+            })
+            .Where(_=>_ != null)
+            .Cast<IQueueControl>()
+            .ToList();
         }
 
         public IReadOnlyList<IExchangeControl> GetExchanges()
@@ -152,7 +169,7 @@ namespace MessageBox.Server.Implementation
 
         public void DeleteQueue(Guid id)
         {
-            if (_queues.Remove(id, out var queue))
+            if (_queues.Remove(id, out var queueRef) && queueRef.TryGetTarget(out var queue))
             {
                 _logger.LogDebug("Removing Queue '{Name}' ({Id})", queue.Name, id);
                 queue.Stop();

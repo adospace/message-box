@@ -149,7 +149,7 @@ namespace MessageBox.Server.Implementation
 
         public bool IsAlive(TimeSpan keepAliveTimeout)
         {
-            return (DateTime.UtcNow - _lastReceivedMessageTimeStamp) <= keepAliveTimeout;
+            return GetSubscribers().Count > 0 || (DateTime.UtcNow - _lastReceivedMessageTimeStamp) <= keepAliveTimeout;
         }
     }
 }

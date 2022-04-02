@@ -86,11 +86,16 @@ namespace MessageBox.Server.Implementation
                     var queueId = Guid.NewGuid();
 
                     var bus = _serviceProvider.GetRequiredService<IBusServer>();
+                    var busControl = _serviceProvider.GetRequiredService<IBusServerControl>();
                     var messageSink = _serviceProvider.GetRequiredService<IMessageSink>();
 
                     var queue = bus.CreateQueue(queueId, socketConnectedToClient.RemoteEndPoint?.ToString() ?? throw new InvalidOperationException());
 
-                    _clients[queueId] = new ConnectionFromClient(_serviceProvider, queue, id => _clients.TryRemove(id, out var _));
+                    _clients[queueId] = new ConnectionFromClient(_serviceProvider, queue, id =>
+                    {
+                        _clients.TryRemove(id, out var _);
+                        busControl.DeleteQueue(id);
+                    });
 
                     _clients[queueId].StartConnectionLoop(socketConnectedToClient, queue, messageSink, cancellationToken);
                 }
